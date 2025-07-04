@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth" x-data="portfolioApp" :class="theme">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shrisab Shrestha - DevOps Engineer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.15.1/devicon.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('portfolioApp', () => ({
+                // ... (all your existing AlpineJS data and methods remain here) ...
+                theme: localStorage.getItem('theme') || 'dark',
+                mobileMenuOpen: false,
+                projectModalOpen: false,
+                terminalOpen: false,
+                siteBuilt: false, 
+                activeSection: 'hero',
+                selectedProject: {},
+                github: { stats: null, totalStars: 0, loading: true, error: null, username: 'Shrisab' },
+                cli: { history: [], command: '' },
+                pipeline: {
+                    status: 'idle', 
+                    stages: [
+                        { name: 'Build', status: 'pending', logs: '' },
+                        { name: 'Test', status: 'pending', logs: '' },
+                        { name: 'Deploy', status: 'pending', logs: '' }
+                    ],
+                    currentStage: -1,
+                },
+                init() {
+                    this.$watch('theme', val => { localStorage.setItem('theme', val); document.documentElement.className = val; });
+                    document.documentElement.className = this.theme;
+                    this.fetchGithubStats();
+                    this.initCli();
+                    this.initAnimations();
+                    // Initialize new libraries
+                    this.initAOS();
+                    this.initTyped();
+                },
+                // --- NEW LIBRARY INITIALIZATIONS ---
+                initAOS() {
+                    AOS.init({
+                        duration: 800,
+                        once: true,
+                    });
+                },
+                initTyped() {
+                    const options = {
+                        strings: [
+                            'I build and automate infrastructure.',
+                            'I am passionate about cloud computing.',
+                            'I bridge the gap between dev and ops.'
+                        ],
+                        typeSpeed: 50,
+                        backSpeed: 25,
+                        backDelay: 1500,
+                        loop: true
+                    };
+                    new Typed('#typed-headline', options);
+                },
+
+                // ... (all your other methods like toggleTheme, fetchGithubStats, etc. remain here) ...
+                toggleTheme() { this.theme = this.theme === 'dark' ? 'light' : 'dark'; },
+                async fetchGithubStats() {
+                    this.github.loading = true; this.github.error = null;
+                    try {
+                        const [userRes, reposRes] = await Promise.all([ fetch(`https://api.github.com/users/${this.github.username}`), fetch(`https://api.github.com/users/${this.github.username}/repos?per_page=100`) ]);
+                        if (!userRes.ok) throw new Error(`Cannot find GitHub user: '${this.github.username}'.`);
+                        if (!reposRes.ok) throw new Error('Failed to fetch repositories.');
+                        this.github.stats = await userRes.json();
+                        const repos = await reposRes.json();
+                        this.github.totalStars = repos.reduce((sum, repo) => sum + repo.stargazers_count, 0);
+                    } catch (e) { this.github.error = e.message; console.error(e); } finally { this.github.loading = false; }
+                },
+                initCli() { this.cli.history.push({ id: Date.now(), output: true, text: "Welcome to shrisab.sh. Type 'help' for commands." }); },
+                handleCliCommand() {
+                    const command = this.cli.command.trim();
+                    this.cli.history.push({ id: Date.now(), text: `$ ${command}` });
+                    const [cmd, ...args] = command.toLowerCase().split(' ');
+                    let output = '';
+                    switch(cmd) {
+                        case 'help': output = "COMMANDS:\n  ls               - List available files and directories.\n  cd /<directory>  - Navigate to a section (e.g., 'cd /projects').\n  cat <file>       - Display item (e.g., 'cat resume').\n  theme <l/d>      - Change theme (light/dark).\n  clear            - Clear the terminal.\n  exit             - Close the terminal.\n\nHint: Use Tab for autocompletion!"; break;
+                        case 'ls': output = "Directories:\n  /about\n  /experience\n  /skills\n  /github\n  /projects\n  /contact\n\nFiles:\n  resume\n  contact\n  socials"; break;
+                        case 'cd':
+                            const section = (args[0] || '').replace('/', '');
+                            const availableSections = ['about', 'experience', 'skills', 'github', 'projects', 'contact'];
+                            if (availableSections.includes(section)) {
+                                document.getElementById(section).scrollIntoView({ behavior: 'smooth' });
+                                output = `Navigating to /${section}...`;
+                                setTimeout(() => { this.terminalOpen = false; }, 800);
+                            } else { output = `cd: no such directory: ${section}.\nTry 'ls' to see available directories.`; }
+                            break;
+                        case 'cat':
+                             if (args[0] === 'resume') { document.getElementById('resume-download-link').click(); output = "Downloading resume..."; }
+                             else if (args[0] === 'contact') { output = "Email: shrisab12@gmail.com\nPhone: +977-9761699513"; }
+                             else if (args[0] === 'socials') { output = "GitHub:   https://github.com/Shrisab\nLinkedIn: https://www.linkedin.com/in/shrisab"; }
+                             else { output = `cat: no such file: ${args[0]}. Try 'ls' to see available files.`; }
+                            break;
+                        case 'theme':
+                            if (args[0] === 'light' || args[0] === 'l') { this.theme = 'light'; output = 'Theme set to light mode.'; } 
+                            else if (args[0] === 'dark' || args[0] === 'd') { this.theme = 'dark'; output = 'Theme set to dark mode.'; } 
+                            else { output = "Usage: theme <light|dark>"; }
+                            break;
+                        case 'clear': this.cli.history = []; break;
+                        case 'exit': this.terminalOpen = false; break;
+                        default: output = `bash: command not found: ${command}. Type 'help' for a list of commands.`;
+                    }
+                    if (output) this.cli.history.push({ id: Date.now() + 1, output: true, text: output });
+                    this.cli.command = '';
+                    this.$nextTick(() => { if(this.$refs.terminal) this.$refs.terminal.scrollTop = this.$refs.terminal.scrollHeight });
+                },
+                handleTabCompletion() {
+                    const [cmd, arg] = this.cli.command.split(' ');
+                    const availableSections = ['about', 'experience', 'skills', 'github', 'projects', 'contact'];
+                    const availableFiles = ['resume', 'contact', 'socials'];
+                    let completions = [];
+                    if (cmd === 'cd' && arg) {
+                        completions = availableSections.filter(s => s.startsWith(arg.replace('/', '')));
+                        if (completions.length === 1) this.cli.command = `cd /${completions[0]}`;
+                    } else if (cmd === 'cat' && arg) {
+                        completions = availableFiles.filter(f => f.startsWith(arg));
+                        if (completions.length === 1) this.cli.command = `cat ${completions[0]}`;
+                    } else {
+                        completions = ['help', 'ls', 'cd', 'cat', 'theme', 'clear', 'exit'].filter(c => c.startsWith(cmd));
+                         if (completions.length === 1) this.cli.command = completions[0];
+                    }
+                    if (completions.length > 1) {
+                        this.cli.history.push({ id: Date.now(), text: `$ ${this.cli.command}` });
+                        this.cli.history.push({ id: Date.now() + 1, output: true, text: completions.join('   ') });
+                    }
+                },
+                runPipeline() {
+                    if (this.pipeline.status === 'running') return;
+                    this.pipeline.status = 'running';
+                    this.pipeline.stages.forEach(s => { s.status = 'pending'; s.logs = ''; });
+                    this.pipeline.currentStage = 0;
+                    this.runStage(0);
+                },
+                runStage(index) {
+                    if (index >= this.pipeline.stages.length) {
+                        this.pipeline.status = 'success';
+                        setTimeout(() => { this.siteBuilt = true; }, 500);
+                        return;
+                    }
+                    const stage = this.pipeline.stages[index];
+                    stage.status = 'running';
+                    const mockLogs = [ `Starting stage: ${stage.name}...`, `[INFO] Pulling latest changes from main branch.`, `[INFO] Stage ${stage.name} dependencies installed.`, `[...mock ${stage.name.toLowerCase()} log output...]`, `[SUCCESS] Stage ${stage.name} completed successfully.` ];
+                    let logIndex = 0;
+                    const logInterval = setInterval(() => {
+                        if (logIndex < mockLogs.length) {
+                            stage.logs += (stage.logs ? '\n' : '') + mockLogs[logIndex];
+                            logIndex++;
+                        } else {
+                            clearInterval(logInterval);
+                            stage.status = 'success';
+                            this.pipeline.currentStage++;
+                            this.runStage(index + 1);
+                        }
+                    }, 250);
+                },
+                initAnimations() {
+                    const canvas = document.getElementById('dynamic-background');
+                    if (!canvas) return;
+                    const ctx = canvas.getContext('2d');
+                    let animationFrameId;
+                    let matrixDrops, nodePoints, codeLines, contactSymbols, skillIcons, gitGraph;
+                    const setupCanvas = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+                    setupCanvas();
+                    window.addEventListener('resize', setupCanvas);
+                    const getAnimationColor = () => this.theme === 'dark' ? '#64ffda' : '#0d9488';
+                    const getBackgroundColor = () => this.theme === 'dark' ? 'rgba(10, 25, 47, 0.05)' : 'rgba(248, 250, 252, 0.05)';
+                    const initMatrix = () => {
+                        const fontSize = 16;
+                        const columns = Math.ceil(canvas.width / fontSize);
+                        matrixDrops = Array.from({ length: columns }).fill(1).map((_, i) => ({ x: i * fontSize, y: Math.random() * canvas.height, char: ['λ', '☁️', '🐳', '🚀', '⚙️', '🔗', '📈', '🔑', '📦', '✔️', '🖥️', '🌐'][Math.floor(Math.random() * 12)] }));
+                    };
+                    const drawMatrix = () => {
+                        ctx.fillStyle = getBackgroundColor();
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.fillStyle = getAnimationColor();
+                        ctx.font = '16px monospace';
+                        matrixDrops.forEach(drop => {
+                            ctx.fillText(drop.char, drop.x, drop.y);
+                            drop.y += 16;
+                            if(drop.y > canvas.height && Math.random() > 0.975) { drop.y = 0; }
+                        });
+                    };
+                    const initNodes = () => { nodePoints = Array.from({length: 30}, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random() - 0.5) * 0.5, vy: (Math.random() - 0.5) * 0.5, radius: Math.random() * 2 + 1 })); };
+                    const drawNodes = () => {
+                        ctx.fillStyle = getBackgroundColor();
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        nodePoints.forEach(p => {
+                            p.x += p.vx; p.y += p.vy;
+                            if(p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                            if(p.y < 0 || p.y > canvas.height) p.vy *= -1;
+                            ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fillStyle = getAnimationColor(); ctx.fill();
+                        });
+                        for(let i = 0; i < nodePoints.length; i++) {
+                            for(let j = i + 1; j < nodePoints.length; j++) {
+                                const dist = Math.hypot(nodePoints[i].x - nodePoints[j].x, nodePoints[i].y - nodePoints[j].y);
+                                if(dist < 100) {
+                                    ctx.beginPath(); ctx.moveTo(nodePoints[i].x, nodePoints[i].y); ctx.lineTo(nodePoints[j].x, nodePoints[j].y);
+                                    ctx.strokeStyle = this.theme === 'dark' ? `rgba(100, 255, 218, ${1 - dist / 100})` : `rgba(13, 148, 136, ${1 - dist / 100})`;
+                                    ctx.stroke();
+                                }
+                            }
+                        }
+                    };
+                    const initSkills = () => {
+                        const iconChars = [0xe633, 0xe7b0, 0xe7b1, 0xe634, 0xe66c, 0xe702, 0xe73c, 0xe6b2, 0xe712];
+                        skillIcons = Array.from({length: 25}, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4, char: String.fromCodePoint(iconChars[Math.floor(Math.random() * iconChars.length)]), font: 'devicon' }));
+                    };
+                    const drawSkills = () => {
+                        ctx.fillStyle = getBackgroundColor();
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.font = '30px devicon';
+                        ctx.fillStyle = getAnimationColor();
+                        skillIcons.forEach(s => { s.x += s.vx; s.y += s.vy; if(s.x < 0 || s.x > canvas.width) s.vx *= -1; if(s.y < 0 || s.y > canvas.height) s.vy *= -1; ctx.fillText(s.char, s.x, s.y); });
+                    };
+                    const initGitGraph = () => {
+                        gitGraph = { nodes: [], edges: [], addNode(x, y, parent) { const node = { x, y, id: this.nodes.length }; this.nodes.push(node); if (parent !== undefined && this.nodes[parent]) { this.edges.push({ from: parent, to: node.id }); } return node.id; } };
+                        let y = canvas.height - 30; let x = canvas.width / 2; let mainBranch = gitGraph.addNode(x, y);
+                        for(let i=0; i < 10; i++) {
+                            y -= 40; mainBranch = gitGraph.addNode(x, y, mainBranch);
+                            if (Math.random() > 0.6) { let featureX = x + (Math.random() > 0.5 ? 60 : -60); let featureBranch = gitGraph.addNode(featureX, y - 20, mainBranch); featureBranch = gitGraph.addNode(featureX, y - 60, featureBranch); gitGraph.addNode(x, y - 80, featureBranch); }
+                        }
+                    };
+                    const drawGitGraph = () => {
+                        ctx.fillStyle = getBackgroundColor();
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.strokeStyle = getAnimationColor();
+                        ctx.lineWidth = 2;
+                        gitGraph.edges.forEach(edge => {
+                            const from = gitGraph.nodes[edge.from]; const to = gitGraph.nodes[edge.to];
+                            ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.bezierCurveTo(from.x, from.y - 20, to.x, to.y + 20, to.x, to.y); ctx.stroke();
+                        });
+                        gitGraph.nodes.forEach(node => { ctx.beginPath(); ctx.arc(node.x, node.y, 4, 0, Math.PI * 2); ctx.fillStyle = getAnimationColor(); ctx.fill(); });
+                    };
+                    const initContact = () => { contactSymbols = Array.from({length: 20}, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3, char: ['✉️', '📞'][Math.floor(Math.random() * 2)] })); };
+                    const drawContact = () => {
+                        ctx.fillStyle = getBackgroundColor();
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.font = '20px monospace';
+                        contactSymbols.forEach(s => { s.x += s.vx; s.y += s.vy; if(s.x < 0 || s.x > canvas.width) s.vx *= -1; if(s.y < 0 || s.y > canvas.height) s.vy *= -1; ctx.fillText(s.char, s.x, s.y); });
+                    };
+                    let currentAnimation = '';
+                    const animate = () => {
+                        const active = this.activeSection;
+                        if (active !== currentAnimation) {
+                            currentAnimation = active;
+                            if(active === 'hero') initMatrix();
+                            else if (['about', 'experience'].includes(active)) initNodes();
+                            else if (active === 'skills') initSkills();
+                            else if (['github', 'projects'].includes(active)) initGitGraph();
+                            else if (active === 'contact') initContact();
+                        }
+                        if(active === 'hero') drawMatrix();
+                        else if (['about', 'experience'].includes(active)) drawNodes();
+                        else if (active === 'skills') drawSkills();
+                        else if (['github', 'projects'].includes(active)) drawGitGraph();
+                        else if (active === 'contact') drawContact();
+                        animationFrameId = requestAnimationFrame(animate);
+                    };
+                    const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { this.activeSection = entry.target.id; } }); }, { threshold: 0.5 });
+                    document.querySelectorAll('section[id]').forEach(section => observer.observe(section));
+                    animate();
+                    const cursorDot = document.getElementById('cursor-dot');
+                    const cursorRing = document.getElementById('cursor-ring');
+                    let dotX = -100, dotY = -100;
+                    let ringX = -100, ringY = -100;
+                    let scale = 1;
+                    window.addEventListener('mousemove', e => { dotX = e.clientX; dotY = e.clientY; });
+                    document.addEventListener('mouseenter', () => { cursorDot.style.opacity = 1; cursorRing.style.opacity = 1; });
+                    document.addEventListener('mouseleave', () => { cursorDot.style.opacity = 0; cursorRing.style.opacity = 0; });
+                    document.querySelectorAll('a, button, input, textarea, [x-data] > button').forEach(el => {
+                        el.addEventListener('mouseenter', () => { scale = 1.5; });
+                        el.addEventListener('mouseleave', () => { scale = 1; });
+                    });
+                    function animateCursor() {
+                        cursorDot.style.transform = `translate(${dotX - 4}px, ${dotY - 4}px)`;
+                        ringX += (dotX - ringX) * 0.2;
+                        ringY += (dotY - ringY) * 0.2;
+                        cursorRing.style.transform = `translate(${ringX - 20}px, ${ringY - 20}px) scale(${scale})`;
+                        requestAnimationFrame(animateCursor);
+                    }
+                    animateCursor();
+                },
+            }));
+        });
+    </script>
+    
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+    <style>
+        :root {
+            --bg-color: #0a192f; --text-color: #8892b0; --heading-color: #ccd6f6; --subheading-color: #a8b2d1; --accent-color: #64ffda; --slate-500: #8892b0; --slate-600: #495670; --slate-700: #112240; --glass-bg: rgba(10, 25, 47, 0.85); --glass-border: rgba(45, 212, 191, 0.1); --input-bg: #112240;
+            --log-bg: rgba(17, 34, 64, 0.7);
+            --log-border: #495670;
+        }
+        html.light {
+            --bg-color: #f8fafc; --text-color: #475569; --heading-color: #0f172a; --subheading-color: #334155; --accent-color: #0d9488; --slate-500: #64748b; --slate-600: #cbd5e1; --slate-700: #e2e8f0; --glass-bg: rgba(255, 255, 255, 0.85); --glass-border: rgba(13, 148, 136, 0.2); --input-bg: #ffffff;
+            --log-bg: #f1f5f9;
+            --log-border: #cbd5e1;
+        }
+        body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Inter', sans-serif; transition: background-color 0.3s ease, color 0.3s ease; cursor: none; }
+        #dynamic-background { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.15; pointer-events: none; }
+        .content-wrapper { position: relative; z-index: 1; }
+        .glass-effect { background: var(--glass-bg); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); transition: background-color 0.3s ease, border-color 0.3s ease; }
+        .text-accent { color: var(--accent-color); }
+        .btn-primary { background-color: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); transition: all 0.3s ease; }
+        .btn-primary:hover { background-color: rgba(100, 255, 218, 0.1); }
+        html.light .btn-primary:hover { background-color: rgba(13, 148, 136, 0.1); }
+        .section-heading, .main-heading { color: var(--heading-color); }
+        .sub-heading { color: var(--subheading-color); }
+        .section-heading::after { content: ''; display: block; position: relative; top: 2px; width: 200px; height: 1px; margin-left: 20px; background-color: var(--slate-700); }
+        .text-slate-500 { color: var(--slate-500); }
+        .tab-button { border-color: var(--slate-700); transition: color 0.3s ease, background-color 0.3s ease; }
+        .tab-button:hover { background-color: var(--slate-700); color: var(--accent-color); }
+        .tab-button.active { color: var(--accent-color); border-left-color: var(--accent-color); background-color: var(--slate-700); }
+        .form-input { background-color: var(--input-bg); border-color: var(--slate-600); color: var(--heading-color); }
+        #cursor-dot { position: fixed; width: 8px; height: 8px; background-color: var(--accent-color); border-radius: 50%; pointer-events: none; transform: translate(0, 0); z-index: 9999; opacity: 0; transition: opacity 0.3s ease; }
+        #cursor-ring { position: fixed; width: 40px; height: 40px; border: 2px solid var(--accent-color); border-radius: 50%; pointer-events: none; transform: translate(0, 0) scale(1); z-index: 9999; opacity: 0; transition: transform 0.2s ease-out, opacity 0.3s ease; }
+        a, button, input, textarea { cursor: none; }
+        .social-icon { transition: transform 0.2s ease-in-out, color 0.2s ease-in-out; }
+        .social-icon:hover { transform: translateY(-4px); color: var(--accent-color); }
+        
+        /* Style for the typing cursor */
+        .typed-cursor {
+            color: var(--accent-color);
+            animation: typedjsBlink 0.7s infinite;
+        }
+        @keyframes typedjsBlink {
+            50% { opacity: 0.0; }
+        }
+    </style>
+</head>
+<body class="leading-relaxed">
+
+    <canvas id="dynamic-background"></canvas>
+    <div id="cursor-dot"></div>
+    <div id="cursor-ring"></div>
+
+    <div x-show="!siteBuilt" class="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 bg-[var(--bg-color)]" x-transition:leave="ease-in duration-500" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+        <div class="w-full max-w-4xl">
+             <div class="glass-effect rounded-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 class="font-bold text-xl main-heading">Initialize Portfolio Deployment</h3>
+                        <p class="text-sm sub-heading">Ready to build and deploy the site?</p>
+                    </div>
+                    <button @click="runPipeline()" :disabled="pipeline.status === 'running'" class="btn-primary py-2 px-6 rounded-md flex items-center justify-center w-40" :class="{ 'opacity-50 cursor-not-allowed': pipeline.status === 'running' }">
+                        <span x-show="pipeline.status !== 'running'">🚀 Deploy Site</span>
+                        <span x-show="pipeline.status === 'running'" class="flex items-center">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            Running...
+                        </span>
+                    </button>
+                </div>
+                <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
+                    <template x-for="(stage, index) in pipeline.stages" :key="stage.name">
+                        <div class="flex items-center w-full">
+                            <div class="flex flex-col items-center">
+                                <div class="w-16 h-16 rounded-full flex items-center justify-center border-2" :class="{ 'border-green-400 bg-green-900/50': stage.status === 'success' && theme === 'dark', 'border-green-500 bg-green-100': stage.status === 'success' && theme === 'light', 'border-yellow-400 bg-yellow-900/50 animate-pulse': stage.status === 'running' && theme === 'dark', 'border-yellow-500 bg-yellow-100 animate-pulse': stage.status === 'running' && theme === 'light', 'border-slate-600': stage.status === 'pending' }">
+                                    <svg x-show="stage.status === 'success'" class="w-8 h-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                    <svg x-show="stage.status === 'running'" class="w-8 h-8 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <svg x-show="stage.status === 'pending'" class="w-8 h-8 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                </div>
+                                <p class="mt-2 font-semibold main-heading" x-text="stage.name"></p>
+                            </div>
+                            <div x-show="index < pipeline.stages.length - 1" class="flex-grow h-1 mx-4 rounded" :class="{ 'bg-green-400': pipeline.currentStage > index, 'bg-slate-600': pipeline.currentStage <= index }"></div>
+                        </div>
+                    </template>
+                </div>
+                <div class="mt-6 p-4 rounded-md border h-48 overflow-y-auto font-mono text-xs" style="background-color: var(--log-bg); border-color: var(--log-border);">
+                    <template x-for="stage in pipeline.stages">
+                        <pre x-show="stage.logs" x-text="stage.logs" class="text-slate-500"></pre>
+                    </template>
+                    <p x-show="pipeline.status === 'idle'" class="text-slate-500">Pipeline logs will appear here...</p>
+                    <p x-show="pipeline.status === 'success'" class="text-green-400">[DEPLOYMENT COMPLETE] Portfolio is live. Welcome!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="siteBuilt" class="content-wrapper" style="display: none;" x-transition:enter="ease-out duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+        <header class="fixed top-0 left-0 right-0 z-40 glass-effect shadow-md">
+            <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+                <a href="#">
+                    <img src="assets/logo.png" alt="Shrisab Shrestha Logo" class="h-12 w-12 rounded-full">
+                </a>
+                <div class="hidden md:flex space-x-6 items-center">
+                    <a href="#about" class="hover:text-accent transition-colors duration-300">About</a>
+                    <a href="#experience" class="hover:text-accent transition-colors duration-300">Experience</a>
+                    <a href="#skills" class="hover:text-accent transition-colors duration-300">Skills</a>
+                    <a href="#projects" class="hover:text-accent transition-colors duration-300">Projects</a>
+                    <a href="#contact" class="hover:text-accent transition-colors duration-300">Contact</a>
+                    <button @click="terminalOpen = true" class="flex items-center space-x-2 btn-primary py-2 px-4 rounded-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
+                        <span>Launch Terminal</span>
+                    </button>
+                    <button @click="toggleTheme" class="text-slate-500 hover:text-accent">
+                        <svg x-show="theme === 'dark'" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        <svg x-show="theme === 'light'" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                    </button>
+                </div>
+                <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden text-accent focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path x-show="!mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path><path x-show="mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </nav>
+            <div x-show="mobileMenuOpen" @click.away="mobileMenuOpen = false" class="md:hidden glass-effect" x-transition>
+                <a href="#about" @click="mobileMenuOpen = false" class="block py-2 px-4 text-sm hover:bg-slate-700">About</a>
+                <a href="#experience" @click="mobileMenuOpen = false" class="block py-2 px-4 text-sm hover:bg-slate-700">Experience</a>
+                <a href="#skills" @click="mobileMenuOpen = false" class="block py-2 px-4 text-sm hover:bg-slate-700">Skills</a>
+                <a href="#projects" @click="mobileMenuOpen = false" class="block py-2 px-4 text-sm hover:bg-slate-700">Projects</a>
+                <a href="#contact" @click="mobileMenuOpen = false" class="block py-2 px-4 text-sm hover:bg-slate-700">Contact</a>
+                <button @click="terminalOpen = true; mobileMenuOpen = false" class="w-full text-left block py-2 px-4 text-sm hover:bg-slate-700">Launch Terminal</button>
+            </div>
+        </header>
+
+        <main class="container mx-auto px-6 md:px-12">
+            <section id="hero" class="min-h-screen flex flex-col justify-center items-start pt-24 scroll-target">
+                <p class="text-accent text-lg mb-4" data-aos="fade-up">Hi, my name is</p>
+                <h1 class="text-4xl md:text-7xl font-bold main-heading" data-aos="fade-up" data-aos-delay="100">Shrisab Shrestha.</h1>
+                <h2 class="text-4xl md:text-7xl font-bold sub-heading mt-2" data-aos="fade-up" data-aos-delay="200"><span id="typed-headline"></span></h2>
+                <p class="mt-6 max-w-xl" data-aos="fade-up" data-aos-delay="300">I'm an Associate DevOps Engineer, specializing in building robust, scalable, and efficient cloud infrastructure. I'm passionate about automation, CI/CD, and bridging the gap between development and operations.</p>
+                <div class="flex space-x-4 mt-8" data-aos="fade-up" data-aos-delay="400">
+                    <a href="#contact" class="btn-primary py-4 px-8 rounded-md text-lg">Get In Touch</a>
+                    <a id="resume-download-link" href="assets/Shrisab.pdf" download="Shrisab_Shrestha_Resume.pdf" class="btn-primary py-4 px-8 rounded-md text-lg">Download Resume</a>
+                </div>
+            </section>
+
+            <section id="about" class="py-24 scroll-target" data-aos="fade-up">
+                <h2 class="section-heading">About Me</h2>
+                <div class="mt-8 grid grid-cols-1 md:grid-cols-5 gap-12 items-center">
+                    <div class="md:col-span-3 space-y-4 text-lg">
+                         <p>Hi, I'm Shrisab! As a DevOps Engineer with a year and a half of hands-on experience, I find my passion in the space where code meets infrastructure. I specialize in designing and automating CI/CD pipelines, managing cloud resources on AWS, and ensuring systems are not just functional, but also scalable and resilient.</p>
+                        <p>My philosophy is simple: "Automate everything." I enjoy working with development teams to give them the tools and platforms they need to deploy their work with confidence and speed. It's incredibly rewarding to see efficient processes lead to great products.</p>
+                    </div>
+                    <div class="md:col-span-2 flex justify-center">
+                        <div class="w-64 h-64 rounded-full relative group">
+                            <div class="absolute inset-0 bg-accent rounded-full transform translate-x-4 translate-y-4 group-hover:translate-x-2 group-hover:translate-y-2 transition-transform duration-300"></div>
+                            <img src="assets/logo.png" alt="Shrisab Shrestha" class="w-full h-full object-cover rounded-full relative z-10">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="experience" class="py-24 scroll-target" x-data="{ activeTab: 'deerhold-assoc' }" data-aos="fade-up">
+                <h2 class="section-heading">Where I've Worked</h2>
+                <div class="mt-8 flex flex-col md:flex-row gap-8">
+                    <div class="flex md:flex-col overflow-x-auto"><button @click="activeTab = 'deerhold-assoc'" :class="{ 'active': activeTab === 'deerhold-assoc' }" class="tab-button text-left whitespace-nowrap px-4 py-2 border-l-2">Deerhold Nepal</button><button @click="activeTab = 'deerhold-intern'" :class="{ 'active': activeTab === 'deerhold-intern' }" class="tab-button text-left whitespace-nowrap px-4 py-2 border-l-2">Deerhold Nepal (Intern)</button><button @click="activeTab = 'sprout-tech'" :class="{ 'active': activeTab === 'sprout-tech' }" class="tab-button text-left whitespace-nowrap px-4 py-2 border-l-2">Sprout Tech</button></div>
+                    <div class="flex-grow min-h-[250px]">
+                        <div x-show="activeTab === 'deerhold-assoc'" x-transition><h3 class="font-semibold text-xl main-heading">Associate DevOps Engineer <span class="text-accent"><a href="https://www.linkedin.com/company/deerhold" class="inline-block transition-transform duration-200 hover:-translate-y-1">@ Deerhold Nepal Pvt. Ltd.</a></span></h3><p class="text-sm mb-4">Sep 2024 - Present</p><ul class="list-disc list-inside space-y-2"><li>Designed and maintained CI/CD pipelines using tools like Jenkins, reducing deployment time.</li><li>Automated infrastructure provisioning and configuration with Terraform/CloudFormation/Ansible.</li><li>Managed containerized applications with Docker, optimizing resource usage and scalability.</li><li>Collaborated with developers to integrate monitoring and logging tools (e.g., Cloudwatch).</li><li>Ensured high availability and performance through efficient load balancing and auto-scaling strategies on AWS.</li></ul></div>
+                        <div x-show="activeTab === 'deerhold-intern'" x-transition><h3 class="font-semibold text-xl main-heading">Intern DevOps Engineer <span class="text-accent"><a href="https://www.linkedin.com/company/deerhold" class="inline-block transition-transform duration-200 hover:-translate-y-1">@ Deerhold Nepal Pvt. Ltd.</a></span></h3><p class="text-sm mb-4">Feb 2024 - Aug 2024</p><ul class="list-disc list-inside space-y-2"><li>Assisted in building deployment pipelines and automating routine tasks using Bash and Python scripts.</li><li>Participated in incident response and troubleshooting infrastructure issues in cloud environments.</li><li>Gained hands-on experience with version control systems (Git), container platforms, and configuration management.</li></ul></div>
+                        <div x-show="activeTab === 'sprout-tech'" x-transition><h3 class="font-semibold text-xl main-heading">Data Specialist <span class="text-accent"><a href="https://www.linkedin.com/company/cloudfactory-com" class="inline-block transition-transform duration-200 hover:-translate-y-1">@ Sprout Tech</a></span></h3><p class="text-sm mb-4">Nov 2020 - Apr 2023</p><ul class="list-disc list-inside space-y-2"><li>Extracted data from multiple sources and compiled reports for internal use.</li><li>Maintained confidentiality and data integrity while handling sensitive information. </li><li>Followed standard operating procedures and compliance guidelines for data processing.</li></ul></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="skills" class="py-24 scroll-target" data-aos="fade-up">
+                <h2 class="section-heading">My Toolkit</h2>
+                <div class="mt-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                    <div class="glass-effect rounded-lg p-6 flex flex-col items-center justify-center text-center hover:-translate-y-2 transition-transform duration-300" data-aos="fade-up" data-aos-delay="50"><i class="devicon-amazonwebservices-original colored text-6xl"></i><p class="mt-4 font-semibold main-heading">AWS</p></div>
+                    <div class="glass-effect rounded-lg p-6 flex flex-col items-center justify-center text-center hover:-translate-y-2 transition-transform duration-300" data-aos="fade-up" data-aos-delay="100"><i class="devicon-docker-plain-wordmark colored text-6xl"></i><p class="mt-4 font-semibold main-heading">Docker</p></div>
+                    <div class="glass-effect rounded-lg p-6 flex flex-col items-center justify-center text-center hover:-translate-y-2 transition-transform duration-300" data-aos="fade-up" data-aos-delay="150"><i class="devicon-terraform-plain-wordmark colored text-6xl"></i><p class="mt-4 font-semibold main-heading">Terraform</p></div>
+                    <div class="glass-effect rounded-lg p-6 flex flex-col items-center justify-center text-center hover:-translate-y-2 transition-transform duration-300" data-aos="fade-up" data-aos-delay="200"><i class="devicon-ansible-plain-wordmark colored text-6xl"></i><p class="mt-4 font-semibold main-heading">Ansible</p></div>
+                    <div class="glass-effect rounded-lg p-6 flex flex-col items-center justify-center text-center hover:-translate-y-2 transition-transform duration-300" data-aos="fade-up" data-aos-delay="250"><i class="devicon-jenkins-line colored text-6xl"></i><p class="mt-4 font-semibold main-heading">Jenkins</p></div>
+                    <div class="glass-effect rounded-lg p-6 flex flex-col items-center justify-center text-center hover:-translate-y-2 transition-transform duration-300" data-aos="fade-up" data-aos-delay="300"><i class="devicon-git-plain colored text-6xl"></i><p class="mt-4 font-semibold main-heading">Git</p></div>
+                    <div class="glass-effect rounded-lg p-6 flex flex-col items-center justify-center text-center hover:-translate-y-2 transition-transform duration-300" data-aos="fade-up" data-aos-delay="350"><i class="devicon-python-plain colored text-6xl"></i><p class="mt-4 font-semibold main-heading">Python</p></div>
+                    <div class="glass-effect rounded-lg p-6 flex flex-col items-center justify-center text-center hover:-translate-y-2 transition-transform duration-300" data-aos="fade-up" data-aos-delay="400"><i class="devicon-bash-plain colored text-6xl" :class="theme === 'dark' ? 'text-white' : 'text-black'"></i><p class="mt-4 font-semibold main-heading">Bash</p></div>
+                    <div class="glass-effect rounded-lg p-6 flex flex-col items-center justify-center text-center hover:-translate-y-2 transition-transform duration-300" data-aos="fade-up" data-aos-delay="450"><i class="devicon-linux-plain colored text-6xl"></i><p class="mt-4 font-semibold main-heading">Linux</p></div>
+                    <div class="glass-effect rounded-lg p-6 flex flex-col items-center justify-center text-center hover:-translate-y-2 transition-transform duration-300" data-aos="fade-up" data-aos-delay="500"><img src="https://skillforge.com/wp-content/uploads/2022/06/powershell.png" alt="PowerShell" class="w-12 h-12" /><p class="mt-4 font-semibold main-heading">PowerShell</p></div>
+                    <div class="glass-effect rounded-lg p-6 flex flex-col items-center justify-center text-center hover:-translate-y-2 transition-transform duration-300" data-aos="fade-up" data-aos-delay="550"><i class="devicon-github-original colored text-6xl" :class="theme === 'dark' ? 'text-white' : 'text-black'"></i><p class="mt-4 font-semibold main-heading">GitHub</p></div>
+                    <div class="glass-effect rounded-lg p-6 flex flex-col items-center justify-center text-center hover:-translate-y-2 transition-transform duration-300" data-aos="fade-up" data-aos-delay="600"><i class="devicon-windows8-original colored text-6xl"></i><p class="mt-4 font-semibold main-heading">Windows</p></div>
+                </div>
+            </section>
+            
+            <section id="github" class="py-24 scroll-target" data-aos="fade-up">
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="section-heading">Code Contributions</h2>
+                    <a href="https://github.com/Shrisab" target="_blank" rel="noopener noreferrer" class="btn-primary py-2 px-4 rounded-md hidden sm:flex">View on GitHub</a>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <template x-if="github.loading"><p class="col-span-full">Loading GitHub stats...</p></template>
+                    <template x-if="github.error"><p class="text-red-400 col-span-full" x-text="github.error"></p></template>
+                    <template x-if="!github.loading && !github.error && github.stats">
+                        <div class="glass-effect rounded-lg p-6" data-aos="fade-up" data-aos-delay="50"><h3 class="text-5xl font-bold text-accent" x-text="github.stats.public_repos"></h3><p class="mt-2">Public Repositories</p></div>
+                        <div class="glass-effect rounded-lg p-6" data-aos="fade-up" data-aos-delay="100"><h3 class="text-5xl font-bold text-accent" x-text="github.stats.followers"></h3><p class="mt-2">Followers</p></div>
+                        <div class="glass-effect rounded-lg p-6" data-aos="fade-up" data-aos-delay="150"><h3 class="text-5xl font-bold text-accent" x-text="github.totalStars"></h3><p class="mt-2">Total Stars Received</p></div>
+                        <div class="glass-effect rounded-lg p-6" data-aos="fade-up" data-aos-delay="200"><h3 class="text-5xl font-bold text-accent" x-text="github.stats.following"></h3><p class="mt-2">Following</p></div>
+                    </template>
+                </div>
+                <a href="https://github.com/Shrisab" target="_blank" rel="noopener noreferrer" class="btn-primary py-2 px-4 rounded-md mt-6 sm:hidden text-center">View on GitHub</a>
+            </section>
+
+            <section id="projects" class="py-24 scroll-target" data-aos="fade-up">
+                <h2 class="section-heading">My Recent Works</h2>
+                <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                    <div @click="projectModalOpen = true; selectedProject = {
+                            title: 'AWS-iac-platform-automation',
+                            problem: 'The primary goal of this project is to create a full-stack, API-driven framework for complete, end-to-end automation of cloud infrastructure on Amazon Web Services (AWS). The framework is designed to deploy and manage complex, multi-server environments with a single API call, handling every stage of the cloud deployment lifecycle.',
+                            solution: `The project provides a solution that uses a combination of Terraform for infrastructure provisioning and Ansible for configuration management, all orchestrated through a set of Flask APIs. The system is designed for a seamless, automated workflow triggered by a single request:
+                                        <ol style='margin-top: 10px; padding-left: 20px;'>
+                                            <li>1. A user sends a POST request to the Deployment API (trigger_deploy.py) with parameters defining the desired environment.</li>
+                                            <li>2. The API triggers the main deploy.sh script.</li>
+                                            <li>3. Terraform takes over, initializing the correct workspace and applying the infrastructure plan to provision all necessary AWS resources.</li>
+                                            <li>4. Once the infrastructure is up, a Python script (generate_inventory.py) runs to inspect the new resources and create a dynamic merged_inventory.json file for Ansible.</li>
+                                            <li>5. Ansible then executes its main playbook (main.yml) against the newly created inventory, performing all configuration tasks on the target instances.</li>
+                                            <li>6. The result is a fully configured, ready-to-use environment, which can then be managed and monitored using the other provided APIs.</li>
+                                        </ol>`,
+                            outcome: `The key outcomes of this project are:
+                                      <ul style='margin-top: 10px; padding-left: 20px;'>
+                                          <li><strong>Infrastructure as Code (IaC):</strong> All AWS resources are defined programmatically using Terraform.</li>
+                                          <li><strong>API-Driven Operations:</strong> A set of Flask APIs serves as the primary control plane for all operations, from deployment to monitoring.</li>
+                                          <li><strong>Multi-Environment Management:</strong> The use of Terraform Workspaces enables the creation and management of isolated environments from the same codebase.</li>
+                                          <li><strong>Dynamic Inventory Generation:</strong> An Ansible inventory is automatically generated based on the resources provisioned by Terraform.</li>
+                                          <li><strong>Comprehensive Configuration Management:</strong> Ansible is used for a wide range of configuration tasks, including installing software, managing storage, and securely transferring files.</li>
+                                      </ul>`,
+                            tech: ['Terraform', 'Ansible', 'Python', 'AWS', 'Flask', 'Bash', 'Boto3', 'Paramiko']
+                        }"
+                        class="glass-effect rounded-lg p-6 flex flex-col group hover:-translate-y-2 transition-transform duration-300 cursor-pointer" data-aos="fade-up" data-aos-delay="50">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <i class="devicon-ansible-plain text-4xl text-accent mr-2"></i>
+                                <i class="devicon-terraform-plain text-4xl text-accent mr-2"></i>
+                                <i class="devicon-python-plain text-4xl text-accent mr-2"></i>
+                                <i class="devicon-amazonwebservices-original text-4xl text-accent"></i>
+                            </div>
+                            <div class="flex space-x-3">
+                                <a href="https://github.com/Shrisab/aws-iac-platform-automation" target="_blank" rel="noopener noreferrer" @click.stop class="hover:text-accent"><i class="devicon-github-original text-2xl"></i></a>
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-bold main-heading group-hover:text-accent transition-colors">AWS-iac-platform-automation</h3>
+                        <p class="mt-2 flex-grow">An API-driven framework using Terraform and Ansible for complete, automated provisioning and configuration of custom environments on AWS.</p>
+                        <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm mt-4">
+                            <span>Ansible</span><span>Terraform</span><span>Python</span><span>AWS</span>
+                        </div>
+                    </div>
+
+                    <div @click="projectModalOpen = true; selectedProject = {
+                            title: 'Automated SSL Certificate Management',
+                            problem: 'The primary goal of this project is to automate the renewal and management of SSL/TLS certificates using Let\'s Encrypt and Terraform. This automation simplifies the process of keeping a website\'s SSL certificates up-to-date and secure.',
+                            solution: `The project provides a set of scripts that work together to achieve the goal of automated SSL certificate management. The key components of the solution are:
+                                        <ol style='margin-top: 10px; padding-left: 20px;'>
+                                            <li><strong>Proactive Certificate Expiration Checks:</strong> A script named check-certificate-expiry.sh is used to check if an SSL certificate is already expired or if it will expire within the next 10 days.</li>
+                                            <li><strong>Automated Certificate Renewal:</strong> The new-renew.sh script automates the process of renewing SSL/TLS certificates with Let's Encrypt using DNS challenges.</li>
+                                            <li><strong>Terraform Integration for Infrastructure Management:</strong> The main script, start.sh, integrates with Terraform to automatically provision and de-provision the necessary infrastructure for certificate renewal.</li>
+                                            <li><strong>Scheduled Renewals with Cron:</strong> The new-renew.sh script adds a cron job to automatically run the renewal script every Sunday at midnight, ensuring regular checks without manual intervention.</li>
+                                        </ol>`,
+                            outcome: `The key outcomes of using this solution are:
+                                      <ul style='margin-top: 10px; padding-left: 20px;'>
+                                          <li><strong>Fully Automated SSL/TLS Certificate Renewal:</strong> The entire process of checking for certificate expiration, renewing the certificate, and managing the necessary infrastructure is automated.</li>
+                                          <li><strong>Enhanced Security:</strong> By ensuring that SSL/TLS certificates are always up-to-date, the solution helps in maintaining the security of the website.</li>
+                                          <li><strong>Proactive Management:</strong> The system proactively checks for certificate expiration, preventing any downtime or security warnings due to expired certificates.</li>
+                                          <li><strong>Simplified Certificate Management:</strong> The solution simplifies what can be a complex and manual process of managing SSL/TLS certificates.</li>
+                                      </ul>`,
+                            tech: ['Let\'s Encrypt', 'Terraform', 'Bash', 'Cron']
+                        }"
+                        class="glass-effect rounded-lg p-6 flex flex-col group hover:-translate-y-2 transition-transform duration-300 cursor-pointer" data-aos="fade-up" data-aos-delay="100">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <i class="devicon-bash-plain text-4xl text-accent mr-2"></i>
+                                <i class="devicon-terraform-plain text-4xl text-accent"></i>
+                            </div>
+                            <div class="flex space-x-3">
+                                <a href="https://github.com/Shrisab/Cert-Automate-SSL-TLS-Certificate-Management" target="_blank" rel="noopener noreferrer" @click.stop class="hover:text-accent"><i class="devicon-github-original text-2xl"></i></a>
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-bold main-heading group-hover:text-accent transition-colors">Cert-Automate-SSL-TLS-Certificate-Management</h3>
+                        <p class="mt-2 flex-grow">A set of shell scripts to automate the renewal and management of SSL/TLS certificates using Let's Encrypt and Terraform.</p>
+                        <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm mt-4">
+                            <span>Terraform</span><span>Bash</span>
+                        </div>
+                    </div>
+
+                    <div @click="projectModalOpen = true; selectedProject = {
+                            title: 'Ansible Playbook for AWS Server Provisioning',
+                            problem: 'The primary goal of using an Ansible playbook for AWS server provisioning is to automate the process of setting up and managing servers and other resources in the Amazon Web Services (AWS) cloud. This is a key practice in the world of Infrastructure as Code (IaC), where you manage your infrastructure using code or definition files rather than manual configuration. The aim is to make the process more efficient, repeatable, and less prone to human error.',
+                            solution: `An Ansible playbook for AWS provisioning typically includes a series of tasks that define the desired state of your AWS infrastructure. Here's how it generally works:
+                                        <ol style='margin-top: 10px; padding-left: 20px;'>
+                                            <li><strong>Playbook Structure:</strong> The solution is centered around one or more YAML files called 'playbooks.' These playbooks list a series of 'plays,' each containing 'tasks.'</li>
+                                            <li><strong>Authentication:</strong> The playbook needs to authenticate with your AWS account. This can be done by providing your AWS access and secret keys as environment variables, in a separate variables file, or by using AWS profiles.</li>
+                                            <li><strong>Provisioning Resources:</strong> The playbook uses Ansible's AWS modules to create and manage various AWS resources like EC2 instances, VPCs, and Security Groups.</li>
+                                            <li><strong>Dynamic Inventory:</strong> After provisioning new EC2 instances, you can use a dynamic inventory script to automatically add these new instances to Ansible's inventory for further configuration.</li>
+                                            <li><strong>Configuration:</strong> Once the infrastructure is provisioned, another play can target the new instances to install software, configure services, and deploy applications.</li>
+                                            <li><strong>Lifecycle Management:</strong> IaC with Ansible also includes the ability to destroy the infrastructure you've created.</li>
+                                        </ol>`,
+                            outcome: `By using an Ansible playbook for AWS server provisioning, you can achieve several key outcomes:
+                                      <ul style='margin-top: 10px; padding-left: 20px;'>
+                                          <li><strong>Automation:</strong> The entire process of setting up your infrastructure is automated, saving time and reducing the risk of manual errors.</li>
+                                          <li><strong>Consistency:</strong> Your infrastructure will be provisioned in a consistent and repeatable manner every time the playbook is run.</li>
+                                          <li><strong>Scalability:</strong> You can easily scale your infrastructure up or down by changing a few variables in your playbook.</li>
+                                          <li><strong>Version Control:</strong> Since your infrastructure is defined in code, you can use version control systems like Git to track changes, collaborate, and roll back if needed.</li>
+                                          <li><strong>Agility:</strong> Automation allows you to quickly provision new environments for development, testing, or production.</li>
+                                      </ul>`,
+                            tech: ['Ansible', 'YAML', 'AWS', 'Python', 'Boto3', 'AWS CLI', 'Git', 'Jinja2']
+                        }"
+                        class="glass-effect rounded-lg p-6 flex flex-col group hover:-translate-y-2 transition-transform duration-300 cursor-pointer" data-aos="fade-up" data-aos-delay="150">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <i class="devicon-ansible-plain text-4xl text-accent mr-2"></i>
+                                <i class="devicon-amazonwebservices-original text-4xl text-accent"></i>
+                            </div>
+                            <div class="flex space-x-3">
+                                <a href="https://github.com/Shrisab/Ansible" target="_blank" rel="noopener noreferrer" @click.stop class="hover:text-accent"><i class="devicon-github-original text-2xl"></i></a>
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-bold main-heading group-hover:text-accent transition-colors">Ansible Playbook for AWS Server Provisioning</h3>
+                        <p class="mt-2 flex-grow">An Ansible playbook to fully automate EC2 server setup, including package management, database installation, and Node.js configuration.</p>
+                        <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm mt-4">
+                            <span>Ansible</span><span>AWS</span>
+                        </div>
+                    </div>
+
+                    <div @click="projectModalOpen = true; selectedProject = {
+                            title: 'Terraform Project for AWS Network Infrastructure',
+                            imageUrl: 'https://placehold.co/800x450/0a192f/64ffda?text=Project+Screenshot',
+                            problem: 'Manually creating AWS networking infrastructure is complex and lacks version control, making it difficult to replicate or manage changes.',
+                            solution: 'I built a modular Terraform project to define the entire network stack (VPC, subnets, IGW, route tables) and deploy an EC2 instance as code.',
+                            outcome: 'Enabled version-controlled, repeatable, and easily manageable AWS infrastructure. New environments can now be created or destroyed in minutes.',
+                            tech: ['Terraform', 'AWS', 'HCL']
+                        }"
+                        class="glass-effect rounded-lg p-6 flex flex-col group hover:-translate-y-2 transition-transform duration-300 cursor-pointer" data-aos="fade-up" data-aos-delay="200">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <i class="devicon-terraform-plain text-4xl text-accent mr-2"></i>
+                                <i class="devicon-amazonwebservices-original text-4xl text-accent"></i>
+                            </div>
+                            <div class="flex space-x-3">
+                                <a href="https://github.com/Shrisab/Terraform" target="_blank" rel="noopener noreferrer" @click.stop class="hover:text-accent"><i class="devicon-github-original text-2xl"></i></a>
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-bold main-heading group-hover:text-accent transition-colors">Terraform Project for AWS Network Infrastructure</h3>
+                        <p class="mt-2 flex-grow">A comprehensive Terraform project for creating a VPC, subnets, security groups, and deploying an EC2 instance, all managed as code.</p>
+                        <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm mt-4">
+                            <span>Terraform</span><span>AWS</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="contact" class="py-24 text-center max-w-2xl mx-auto scroll-target" data-aos="fade-up">
+                <p class="text-accent text-lg">What's Next?</p>
+                <h2 class="text-5xl font-bold main-heading mt-2">Get In Touch</h2>
+                <p class="mt-6 mb-8">My inbox is always open. Whether you have a question, a proposal, or just want to say hi, I'll do my best to get back to you!</p>
+                <form action="https://api.web3forms.com/submit" method="POST" class="text-left">
+                    <input type="hidden" name="access_key" value="88fcaa21-38c1-415c-98bf-ea366ef3a721">
+                    <input type="hidden" name="subject" value="New Contact Form Submission from Portfolio">
+                    <input type="hidden" name="from_name" value="Shrisab's Portfolio">
+                    <input type="hidden" name="redirect" value="https://web3forms.com/success">
+                    <input type="hidden" name="html" value="<h3>New Message from Your Portfolio</h3><p><strong>Name:</strong> {{name}}</p><p><strong>Email:</strong> <a href='mailto:{{email}}'>{{email}}</a></p><p><strong>Message:</strong></p><p>{{message}}</p>">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label for="name" class="block mb-2 text-sm font-medium">Your Name</label>
+                            <input type="text" id="name" name="name" class="w-full p-3 rounded-md form-input border focus:ring-2 focus:ring-accent focus:border-accent" required>
+                        </div>
+                        <div>
+                            <label for="email" class="block mb-2 text-sm font-medium">Your Email</label>
+                            <input type="email" id="email" name="email" class="w-full p-3 rounded-md form-input border focus:ring-2 focus:ring-accent focus:border-accent" required>
+                        </div>
+                    </div>
+                    <div class="mb-6">
+                        <label for="message" class="block mb-2 text-sm font-medium">Message</label>
+                        <textarea id="message" name="message" rows="4" class="w-full p-3 rounded-md form-input border focus:ring-2 focus:ring-accent focus:border-accent" required></textarea>
+                    </div>
+                    <div class="text-center">
+                        <button type="submit" class="btn-primary py-3 px-8 rounded-md text-lg">Send Message</button>
+                    </div>
+                </form>
+            </section>
+        </main>
+
+        <footer class="py-6 text-center text-slate-500 text-sm">
+            <div class="flex justify-center items-center space-x-6 mb-4">
+                <a href="https://github.com/Shrisab" target="_blank" rel="noopener noreferrer" class="social-icon"><i class="devicon-github-original text-2xl"></i></a>
+                <a href="https://www.linkedin.com/in/shrisab" target="_blank" rel="noopener noreferrer" class="social-icon"><i class="devicon-linkedin-plain text-2xl"></i></a>
+                <a href="https://www.instagram.com/shrisab_s" target="_blank" rel="noopener noreferrer" class="social-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+                        <title>Instagram</title>
+                        <rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                    </svg>
+                </a>
+            </div>
+            <p>Designed & Built by Shrisab Shrestha</p>
+        </footer>
+    </div>
+    
+    <div x-show="projectModalOpen" @keydown.escape.window="projectModalOpen = false" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" style="display: none;">
+        <div @click.away="projectModalOpen = false" class="glass-effect rounded-lg shadow-xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col" x-show="projectModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
+            <div class="p-6 border-b border-slate-700 flex justify-between items-center">
+                 <h3 class="text-2xl font-bold main-heading" x-text="selectedProject.title"></h3>
+                 <button @click="projectModalOpen = false" class="text-slate-500 hover:text-accent text-3xl">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto">
+                <img :src="selectedProject.imageUrl" alt="" class="rounded-lg mb-6 w-full object-cover">
+                
+                <h4 class="text-lg font-bold text-accent mb-2">The Goal</h4>
+                <p class="mb-6" x-html="selectedProject.problem"></p>
+                
+                <h4 class="text-lg font-bold text-accent mb-2">My Solution</h4>
+                <p class="mb-6" x-html="selectedProject.solution"></p>
+                
+                <h4 class="text-lg font-bold text-accent mb-2">Key Outcomes</h4>
+                <p class="mb-6" x-html="selectedProject.outcome"></p>
+
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <span class="text-sub-heading mr-2">Technologies Used:</span>
+                    <template x-for="tech in selectedProject.tech" :key="tech">
+                        <span class="bg-slate-700 text-accent text-xs font-semibold mr-2 px-2.5 py-0.5 rounded" x-text="tech"></span>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="terminalOpen" @keydown.escape.window="terminalOpen = false" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" style="display: none;">
+        <div @click.away="terminalOpen = false" class="glass-effect rounded-lg shadow-xl w-full max-w-4xl h-3/4 mx-4 flex flex-col">
+            <div class="bg-slate-700/50 rounded-t-lg p-2 flex items-center">
+                <div class="flex space-x-2"><button @click="terminalOpen = false" class="w-3 h-3 rounded-full bg-red-500"></button><div class="w-3 h-3 rounded-full bg-yellow-500"></div><div class="w-3 h-3 rounded-full bg-green-500"></div></div>
+                <p class="flex-grow text-center text-sm font-mono">shrisab-portfolio -- -bash</p>
+            </div>
+            <div @click="$refs.cliInput.focus()" class="p-4 font-mono text-sm h-full flex flex-col cursor-text overflow-y-auto" x-ref="terminal">
+                <template x-for="line in cli.history" :key="line.id">
+                    <div>
+                        <span x-show="!line.output" class="text-accent">$ </span>
+                        <span :class="{'text-accent': line.output && line.text.includes('Welcome')}" x-html="line.text.replace(/\n/g, '<br>')"></span>
+                    </div>
+                </template>
+                <div class="flex mt-2">
+                    <span class="text-accent">$</span>
+                    <input type="text" x-ref="cliInput" x-model="cli.command" @keydown.enter="handleCliCommand()" @keydown.tab.prevent="handleTabCompletion()" class="bg-transparent border-none w-full focus:ring-0 pl-2 main-heading">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+    <script src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
+    
+</body>
+</html>
