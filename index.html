@@ -439,9 +439,14 @@
     <style>
         :root {
             --bg-color: #0a192f; --text-color: #8892b0; --heading-color: #ccd6f6; --subheading-color: #a8b2d1; --accent-color: #64ffda; --slate-500: #8892b0; --slate-600: #495670; --slate-700: #112240; --glass-bg: rgba(10, 25, 47, 0.85); --glass-border: rgba(45, 212, 191, 0.1); --input-bg: #112240;
+            --log-bg: rgba(17, 34, 64, 0.7);
+            --log-border: #495670;
         }
         html.light {
             --bg-color: #f8fafc; --text-color: #475569; --heading-color: #0f172a; --subheading-color: #334155; --accent-color: #0d9488; --slate-500: #64748b; --slate-600: #cbd5e1; --slate-700: #e2e8f0; --glass-bg: rgba(255, 255, 255, 0.85); --glass-border: rgba(13, 148, 136, 0.2); --input-bg: #ffffff;
+            --log-bg: #f1f5f9;
+            --log-border: #cbd5e1;
+
         }
         body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Inter', sans-serif; transition: background-color 0.3s ease, color 0.3s ease; cursor: none; }
         #dynamic-background { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.15; pointer-events: none; }
@@ -505,11 +510,11 @@
     <!-- Preloader / Pipeline Entry -->
     <div x-show="!siteBuilt" class="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 bg-[var(--bg-color)]" x-transition:leave="ease-in duration-500" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
         <div class="w-full max-w-4xl">
-             <div class="glass-effect rounded-lg p-6">
+            <div class="glass-effect rounded-lg p-6">
                 <div class="flex justify-between items-center mb-6">
                     <div>
                         <h3 class="font-bold text-xl main-heading">Initialize Portfolio Deployment</h3>
-                        <p class="text-sm">Ready to build and deploy the site?</p>
+                        <p class="text-sm sub-heading">Ready to build and deploy the site?</p>
                     </div>
                     <button @click="runPipeline()" :disabled="pipeline.status === 'running'" class="btn-primary py-2 px-6 rounded-md flex items-center justify-center w-40" :class="{ 'opacity-50 cursor-not-allowed': pipeline.status === 'running' }">
                         <span x-show="pipeline.status !== 'running'">🚀 Deploy Site</span>
@@ -536,11 +541,11 @@
                     </template>
                 </div>
 
-                <div class="mt-6 bg-slate-900/70 p-4 rounded-md border border-slate-600 h-48 overflow-y-auto font-mono text-xs">
+                <div class="mt-6 p-4 rounded-md border h-48 overflow-y-auto font-mono text-xs" style="background-color: var(--log-bg); border-color: var(--log-border);">
                     <template x-for="stage in pipeline.stages">
-                        <pre x-show="stage.logs" x-text="stage.logs"></pre>
+                        <pre x-show="stage.logs" x-text="stage.logs" class="text-slate-500"></pre>
                     </template>
-                    <p x-show="pipeline.status === 'idle'">Pipeline logs will appear here...</p>
+                    <p x-show="pipeline.status === 'idle'" class="text-slate-500">Pipeline logs will appear here...</p>
                     <p x-show="pipeline.status === 'success'" class="text-green-400">[DEPLOYMENT COMPLETE] Portfolio is live. Welcome!</p>
                 </div>
             </div>
@@ -552,7 +557,10 @@
         <!-- Header & Navigation -->
         <header class="fixed top-0 left-0 right-0 z-40 glass-effect shadow-md">
             <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-                <a href="#" class="text-2xl font-black text-accent">SS</a>
+                <!-- <a href="#" class="text-2xl font-black text-accent">SS</a> -->
+                <a href="#">
+                    <img src="assets/logo.png" alt="Shrisab Shrestha Logo" class="h-12 w-12 rounded-full">
+                </a>
                 <div class="hidden md:flex space-x-6 items-center">
                     <a href="#about" class="hover:text-accent transition-colors duration-300">About</a>
                     <a href="#experience" class="hover:text-accent transition-colors duration-300">Experience</a>
@@ -606,9 +614,9 @@
                         <p>My main focus is on automating every step of the software delivery lifecycle, from code commit to production deployment. I believe in the "you build it, you run it" philosophy and enjoy empowering development teams with the tools and platforms they need to ship code faster and more reliably.</p>
                     </div>
                     <div class="md:col-span-2 flex justify-center">
-                        <div class="w-64 h-64 rounded-md relative group">
-                            <div class="absolute inset-0 bg-accent rounded-md transform translate-x-4 translate-y-4 group-hover:translate-x-2 group-hover:translate-y-2 transition-transform duration-300"></div>
-                            <img src="https://placehold.co/400x400/0a192f/ccd6f6?text=SS" alt="Shrisab Shrestha" class="w-full h-full object-cover rounded-md relative z-10" onerror="this.onerror=null;this.src='https://placehold.co/400x400/e2e8f0/334155?text=Image';">
+                        <div class="w-64 h-64 rounded-full relative group">
+                            <div class="absolute inset-0 bg-accent rounded-full transform translate-x-4 translate-y-4 group-hover:translate-x-2 group-hover:translate-y-2 transition-transform duration-300"></div>
+                            <img src="assets/logo.png" alt="Shrisab Shrestha" class="w-full h-full object-cover rounded-full relative z-10">
                         </div>
                     </div>
                 </div>
@@ -667,27 +675,71 @@
 
             <!-- Projects Section -->
             <section id="projects" class="py-24 scroll-target">
-                <h2 class="section-heading">Things I've Built</h2>
+                <h2 class="section-heading">My Recent Works</h2>
                 <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div @click="projectModalOpen = true; selectedProject = { title: 'AWS-iac-platform-automation', description: 'An API-driven framework using Terraform and Ansible for complete, automated provisioning and configuration of custom environments on AWS.', tech: ['Terraform' , 'Ansible'] }" class="glass-effect rounded-lg p-6 flex flex-col group hover:-translate-y-2 transition-transform duration-300 cursor-pointer">
-                        <div class="flex justify-between items-center mb-4"><i class="devicon-ansible-plain text-4xl text-accent"></i><i class="devicon-terraform-plain text-4xl text-accent"></i><div class="flex space-x-3"><a href="https://github.com/Shrisab/aws-iac-platform-automation" target="_blank" rel="noopener noreferrer" @click.stop class="hover:text-accent"><i class="devicon-github-original text-2xl"></i></a></div></div>
-                        <h3 class="text-xl font-bold main-heading group-hover:text-accent transition-colors">Ansible Playbook for AWS Server Provisioning and Environment Configuration</h3>
+
+                    <div @click="projectModalOpen = true; selectedProject = { title: 'AWS-iac-platform-automation', description: 'An API-driven framework using Terraform and Ansible for complete, automated provisioning and configuration of custom environments on AWS.', tech: ['Terraform' , 'Ansible' , 'Python' , 'AWS'] }" class="glass-effect rounded-lg p-6 flex flex-col group hover:-translate-y-2 transition-transform duration-300 cursor-pointer">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <i class="devicon-ansible-plain text-4xl text-accent mr-2"></i>
+                                <i class="devicon-terraform-plain text-4xl text-accent mr-2"></i>
+                                <i class="devicon-python-plain text-4xl text-accent mr-2"></i>       
+                                <i class="devicon-amazonwebservices-original text-4xl text-accent mr-2"></i>                                
+                            </div>
+                            <div class="flex space-x-3">
+                                <a href="https://github.com/Shrisab/aws-iac-platform-automation" target="_blank" rel="noopener noreferrer" @click.stop class="hover:text-accent"><i class="devicon-github-original text-2xl"></i></a>
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-bold main-heading group-hover:text-accent transition-colors">AWS-iac-platform-automation</h3>
                         <p class="mt-2 flex-grow">An API-driven framework using Terraform and Ansible for complete, automated provisioning and configuration of custom environments on AWS.</p>
-                        <div class="flex space-x-4 text-sm mt-4"><span>Ansible</span><span>Terraform</span></div>
+                        <div class="flex space-x-4 text-sm mt-4"><span>Ansible</span><span>Terraform-Workspaces</span><span>Python</span><span>AWS</span></div>
                     </div>
-                <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div @click="projectModalOpen = true; selectedProject = { title: 'Ansible Playbook for AWS Server Provisioning and Environment Configuration', description: 'Updating apt packages , cloning project , replacing ip address , installing mysql and its dependecies and starting mysql services , installing nodejs and its dependencies in aws server through ansibe.', tech: ['Terraform'] }" class="glass-effect rounded-lg p-6 flex flex-col group hover:-translate-y-2 transition-transform duration-300 cursor-pointer">
-                        <div class="flex justify-between items-center mb-4"><i class="devicon-ansible-plain text-4xl text-accent"></i><div class="flex space-x-3"><a href="https://github.com/Shrisab/Ansible" target="_blank" rel="noopener noreferrer" @click.stop class="hover:text-accent"><i class="devicon-github-original text-2xl"></i></a></div></div>
+
+                    <div @click="projectModalOpen = true; selectedProject = { title: 'Cert-Automate-SSL-TLS-Certificate-Management', description: 'A set of shell scripts to automate the renewal and management of SSL/TLS certificates using Let\'s Encrypt and Terraform. This project simplifies the process of keeping your website\'s SSL certificates up-to-date and secure.', tech: ['Terraform' , 'Bash'] }" class="glass-effect rounded-lg p-6 flex flex-col group hover:-translate-y-2 transition-transform duration-300 cursor-pointer">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <i class="devicon-bash-plain text-4xl text-accent mr-2"></i>
+                                <i class="devicon-terraform-plain text-4xl text-accent mr-2"></i>
+                            </div>
+                            <div class="flex space-x-3">
+                                <a href="https://github.com/Shrisab/Cert-Automate-SSL-TLS-Certificate-Management" target="_blank" rel="noopener noreferrer" @click.stop class="hover:text-accent"><i class="devicon-github-original text-2xl"></i></a>
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-bold main-heading group-hover:text-accent transition-colors">Cert-Automate-SSL-TLS-Certificate-Management</h3>
+                        <p class="mt-2 flex-grow">A set of shell scripts to automate the renewal and management of SSL/TLS certificates using Let's Encrypt and Terraform. This project simplifies the process of keeping your website's SSL certificates up-to-date and secure.</p>
+                        <div class="flex space-x-4 text-sm mt-4"><span>Terraform</span><span>Bash</span></div>
+                    </div>
+
+                    <div @click="projectModalOpen = true; selectedProject = { title: 'Ansible Playbook for AWS Server Provisioning and Environment Configuration', description: 'Updating apt packages , cloning project , replacing ip address , installing mysql and its dependecies and starting mysql services , installing nodejs and its dependencies in aws server through ansibe.', tech: ['Ansible' , 'AWS'] }" class="glass-effect rounded-lg p-6 flex flex-col group hover:-translate-y-2 transition-transform duration-300 cursor-pointer">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <i class="devicon-ansible-plain text-4xl text-accent mr-2"></i>
+                                <i class="devicon-amazonwebservices-original text-4xl text-accent mr-2"></i>
+                            </div>
+                            <div class="flex space-x-3">
+                                <a href="https://github.com/Shrisab/Ansible" target="_blank" rel="noopener noreferrer" @click.stop class="hover:text-accent"><i class="devicon-github-original text-2xl"></i></a>
+                            </div>
+                        </div>
                         <h3 class="text-xl font-bold main-heading group-hover:text-accent transition-colors">Ansible Playbook for AWS Server Provisioning and Environment Configuration</h3>
-                        <p class="mt-2 flex-grow">Updating apt packages , cloning project , replacing ip address , installing mysql and its dependecies and starting mysql services , installing nodejs and its dependencies in aws server through ansibe.</p>
-                        <div class="flex space-x-4 text-sm mt-4"><span>Ansible</span></div>
+                        <p class="mt-2 flex-grow">Updating apt packages, cloning project, replacing ip address, installing mysql and its dependecies and starting mysql services, installing nodejs and its dependencies in aws server through ansible.</p>
+                        <div class="flex space-x-4 text-sm mt-4"><span>Ansible</span><span>AWS</span></div>
                     </div>
-                    <div @click="projectModalOpen = true; selectedProject = { title: 'Terraform Project for AWS Network Infrastructure and EC2 Deployment', description: 'A terraform project to create vpc , subnets , igw , security groups , route table and its association , ec2 t2.micro instance.', tech: ['Terraform'] }" class="glass-effect rounded-lg p-6 flex flex-col group hover:-translate-y-2 transition-transform duration-300 cursor-pointer">
-                        <div class="flex justify-between items-center mb-4"><i class="devicon-terraform-plain text-4xl text-accent"></i><div class="flex space-x-3"><a href="https://github.com/Shrisab/Terraform" target="_blank" rel="noopener noreferrer" @click.stop class="hover:text-accent"><i class="devicon-github-original text-2xl"></i></a></div></div>
+
+                    <div @click="projectModalOpen = true; selectedProject = { title: 'Terraform Project for AWS Network Infrastructure and EC2 Deployment', description: 'A terraform project to create vpc , subnets , igw , security groups , route table and its association , ec2 t2.micro instance.', tech: ['Terraform' , 'AWS'] }" class="glass-effect rounded-lg p-6 flex flex-col group hover:-translate-y-2 transition-transform duration-300 cursor-pointer">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <i class="devicon-terraform-plain text-4xl text-accent mr-2"></i>
+                                <i class="devicon-amazonwebservices-original text-4xl text-accent mr-2"></i>
+                            </div>    
+                            <div class="flex space-x-3">
+                                <a href="https://github.com/Shrisab/Terraform" target="_blank" rel="noopener noreferrer" @click.stop class="hover:text-accent"><i class="devicon-github-original text-2xl"></i></a>
+                            </div>
+                        </div>
                         <h3 class="text-xl font-bold main-heading group-hover:text-accent transition-colors">Terraform Project for AWS Network Infrastructure and EC2 Deployment</h3>
-                        <p class="mt-2 flex-grow">A terraform project to create vpc , subnets , igw , security groups , route table and its association , ec2 t2.micro instance.</p>
-                        <div class="flex space-x-4 text-sm mt-4"><span>Terraform</span></div>
+                        <p class="mt-2 flex-grow">A terraform project to create vpc, subnets, igw, security groups, route table and its association, ec2 t2.micro instance.</p>
+                        <div class="flex space-x-4 text-sm mt-4"><span>Terraform</span><span>AWS</span></div>
                     </div>
+
                 </div>
             </section>
 
@@ -701,7 +753,7 @@
                     <input type="hidden" name="subject" value="New Contact Form Submission from Portfolio">
                     <input type="hidden" name="from_name" value="Shrisab's Portfolio">
                     <input type="hidden" name="redirect" value="https://web3forms.com/success">
-                    <input type="hidden" name="html" value="<style> body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; } .container { width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; } .header { background-color: #0d9488; color: white; padding: 10px; text-align: center; border-radius: 10px 10px 0 0; } .content { padding: 20px; } .content table { width: 100%; border-collapse: collapse; } .content th, .content td { padding: 10px; border: 1px solid #eee; text-align: left; } .content th { background-color: #f9f9f9; width: 30%; } .footer { text-align: center; font-size: 12px; color: #777; margin-top: 20px; } </style> <div class='container'> <div class='header'> <h2>New Portfolio Message!</h2> </div> <div class='content'> <p>You have received a new message from your portfolio contact form:</p> <table> <tr> <th>Name</th> <td>{{name}}</td> </tr> <tr> <th>Email</th> <td><a href='mailto:{{email}}'>{{email}}</a></td> </tr> <tr> <th>Message</th> <td>{{message}}</td> </tr> </table> </div> <div class='footer'> <p>This email was sent from your portfolio website.</p> </div> </div>">
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
                             <label for="name" class="block mb-2 text-sm font-medium">Your Name</label>
@@ -725,9 +777,21 @@
 
         <!-- Footer -->
         <footer class="py-6 text-center text-slate-500 text-sm">
-            <div class="flex justify-center space-x-6 mb-4">
-                <a href="https://github.com/Shrisab" target="_blank" rel="noopener noreferrer" class="social-icon"><i class="devicon-github-original text-2xl"></i></a>
-                <a href="https://www.linkedin.com/in/shrisab" target="_blank" rel="noopener noreferrer" class="social-icon"><i class="devicon-linkedin-plain text-2xl"></i></a>
+            <div class="flex justify-center items-center space-x-6 mb-4">
+                <a href="https://github.com/Shrisab" target="_blank" rel="noopener noreferrer" class="social-icon">
+                    <i class="devicon-github-original text-2xl"></i>
+                </a>
+                <a href="https://www.linkedin.com/in/shrisab" target="_blank" rel="noopener noreferrer" class="social-icon">
+                    <i class="devicon-linkedin-plain text-2xl text-slate-500"></i>
+                </a>
+                <a href="https://www.instagram.com/shrisab_s" target="_blank" rel="noopener noreferrer" class="social-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-slate-500">
+                        <title>Instagram</title>
+                        <rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                    </svg>
+                </a>
             </div>
             <p>Designed & Built by Shrisab Shrestha</p>
         </footer>
