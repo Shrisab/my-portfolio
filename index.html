@@ -669,6 +669,13 @@
             <section id="projects" class="py-24 scroll-target">
                 <h2 class="section-heading">Things I've Built</h2>
                 <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div @click="projectModalOpen = true; selectedProject = { title: 'AWS-iac-platform-automation', description: 'An API-driven framework using Terraform and Ansible for complete, automated provisioning and configuration of custom environments on AWS.', tech: ['Terraform' , 'Ansible'] }" class="glass-effect rounded-lg p-6 flex flex-col group hover:-translate-y-2 transition-transform duration-300 cursor-pointer">
+                        <div class="flex justify-between items-center mb-4"><i class="devicon-ansible-plain text-4xl text-accent"></i><i class="devicon-terraform-plain text-4xl text-accent"></i><div class="flex space-x-3"><a href="https://github.com/Shrisab/aws-iac-platform-automation" target="_blank" rel="noopener noreferrer" @click.stop class="hover:text-accent"><i class="devicon-github-original text-2xl"></i></a></div></div>
+                        <h3 class="text-xl font-bold main-heading group-hover:text-accent transition-colors">Ansible Playbook for AWS Server Provisioning and Environment Configuration</h3>
+                        <p class="mt-2 flex-grow">An API-driven framework using Terraform and Ansible for complete, automated provisioning and configuration of custom environments on AWS.</p>
+                        <div class="flex space-x-4 text-sm mt-4"><span>Ansible</span><span>Terraform</span></div>
+                    </div>
+                <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div @click="projectModalOpen = true; selectedProject = { title: 'Ansible Playbook for AWS Server Provisioning and Environment Configuration', description: 'Updating apt packages , cloning project , replacing ip address , installing mysql and its dependecies and starting mysql services , installing nodejs and its dependencies in aws server through ansibe.', tech: ['Terraform'] }" class="glass-effect rounded-lg p-6 flex flex-col group hover:-translate-y-2 transition-transform duration-300 cursor-pointer">
                         <div class="flex justify-between items-center mb-4"><i class="devicon-ansible-plain text-4xl text-accent"></i><div class="flex space-x-3"><a href="https://github.com/Shrisab/Ansible" target="_blank" rel="noopener noreferrer" @click.stop class="hover:text-accent"><i class="devicon-github-original text-2xl"></i></a></div></div>
                         <h3 class="text-xl font-bold main-heading group-hover:text-accent transition-colors">Ansible Playbook for AWS Server Provisioning and Environment Configuration</h3>
