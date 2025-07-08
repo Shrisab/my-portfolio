@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth" x-data="portfolioApp" :class="theme">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Projects - Shrisab Shrestha</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.15.1/devicon.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <style>
+        :root { --bg-color: #0a192f; --text-color: #8892b0; --heading-color: #ccd6f6; --subheading-color: #a8b2d1; --accent-color: #64ffda; --slate-500: #8892b0; --slate-600: #495670; --slate-700: #112240; --glass-bg: rgba(10, 25, 47, 0.85); --glass-border: rgba(45, 212, 191, 0.1); --input-bg: #112240; }
+        html.light { --bg-color: #f8fafc; --text-color: #475569; --heading-color: #0f172a; --subheading-color: #334155; --accent-color: #0d9488; --slate-500: #64748b; --slate-600: #cbd5e1; --slate-700: #e2e8f0; --glass-bg: rgba(255, 255, 255, 0.85); --glass-border: rgba(13, 148, 136, 0.2); --input-bg: #ffffff; }
+        body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Inter', sans-serif; cursor: none; }
+        #cursor-dot { position: fixed; width: 8px; height: 8px; background-color: var(--accent-color); border-radius: 50%; pointer-events: none; transform: translate(0, 0); z-index: 9999; opacity: 0; transition: opacity 0.3s ease; }
+        #cursor-ring { position: fixed; width: 40px; height: 40px; border: 2px solid var(--accent-color); border-radius: 50%; pointer-events: none; transform: translate(0, 0) scale(1); z-index: 9999; opacity: 0; transition: transform 0.2s ease-out, opacity 0.3s ease; }
+        .glass-effect { background: var(--glass-bg); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); transition: background-color 0.3s ease, border-color 0.3s ease; }
+        .text-accent { color: var(--accent-color); }
+        .main-heading { color: var(--heading-color); }
+        .btn-primary { background-color: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); transition: all 0.3s ease; }
+        .btn-primary:hover { background-color: rgba(100, 255, 218, 0.1); }
+        html.light .btn-primary:hover { background-color: rgba(13, 148, 136, 0.1); }
+        .social-icon { transition: transform 0.2s ease-in-out, color 0.2s ease-in-out; }
+        .social-icon:hover { transform: translateY(-4px); color: var(--accent-color); }
+        a, button, input, textarea { cursor: none; }
+    </style>
+</head>
+<body class="leading-relaxed">
+
+    <div id="cursor-dot"></div>
+    <div id="cursor-ring"></div>
+    
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('portfolioApp', () => ({
+                theme: localStorage.getItem('theme') || 'dark',
+                mobileMenuOpen: false,
+                projectModalOpen: false,
+                selectedProject: {},
+                lightboxOpen: false,
+                lightboxImage: '',
+                init() {
+                    this.$watch('theme', val => { localStorage.setItem('theme', val); document.documentElement.className = val; });
+                    document.documentElement.className = this.theme;
+                    AOS.init({ duration: 800, once: true, });
+                    const cursorDot = document.getElementById('cursor-dot');
+                    const cursorRing = document.getElementById('cursor-ring');
+                    let dotX = -100, dotY = -100; let ringX = -100, ringY = -100; let scale = 1;
+                    window.addEventListener('mousemove', e => { dotX = e.clientX; dotY = e.clientY; });
+                    document.addEventListener('mouseenter', () => { cursorDot.style.opacity = 1; cursorRing.style.opacity = 1; });
+                    document.addEventListener('mouseleave', () => { cursorDot.style.opacity = 0; cursorRing.style.opacity = 0; });
+                    document.querySelectorAll('a, button, input, textarea').forEach(el => {
+                        el.addEventListener('mouseenter', () => { scale = 1.5; });
+                        el.addEventListener('mouseleave', () => { scale = 1; });
+                    });
+                    function animateCursor() {
+                        cursorDot.style.transform = `translate(${dotX - 4}px, ${dotY - 4}px)`;
+                        ringX += (dotX - ringX) * 0.2;
+                        ringY += (dotY - ringY) * 0.2;
+                        cursorRing.style.transform = `translate(${ringX - 20}px, ${ringY - 20}px) scale(${scale})`;
+                        requestAnimationFrame(animateCursor);
+                    }
+                    animateCursor();
+                },
+                toggleTheme() { this.theme = this.theme === 'dark' ? 'light' : 'dark'; },
+            }));
+        });
+    </script>
+
+    <div class="content-wrapper">
+        
+        <header class="sticky top-0 left-0 right-0 z-40 glass-effect shadow-md">
+            <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+                <a href="index.html">
+                    <img src="assets/logo.png" alt="Shrisab Shrestha Logo" class="h-12 w-12 rounded-full">
+                </a>
+                <div class="hidden md:flex space-x-6 items-center">
+                    <a href="index.html#about" class="hover:text-accent transition-colors duration-300">About</a>
+                    <a href="index.html#experience" class="hover:text-accent transition-colors duration-300">Experience</a>
+                    <a href="index.html#projects" class="hover:text-accent transition-colors duration-300">Projects</a>
+                    <a href="index.html#contact" class="hover:text-accent transition-colors duration-300">Contact</a>
+                    <button @click="toggleTheme" class="text-slate-500 hover:text-accent">
+                        <svg x-show="theme === 'dark'" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        <svg x-show="theme === 'light'" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                    </button>
+                </div>
+                <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden text-accent focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path x-show="!mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path><path x-show="mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </nav>
+            <div x-show="mobileMenuOpen" @click.away="mobileMenuOpen = false" class="md:hidden glass-effect" x-transition>
+                <a href="index.html#about" class="block py-2 px-4 text-sm hover:bg-slate-700">About</a>
+                <a href="index.html#experience" class="block py-2 px-4 text-sm hover:bg-slate-700">Experience</a>
+                <a href="index.html#projects" class="block py-2 px-4 text-sm hover:bg-slate-700">Projects</a>
+                <a href="index.html#contact" class="block py-2 px-4 text-sm hover:bg-slate-700">Contact</a>
+            </div>
+        </header>
+
+        <main class="container mx-auto px-6 md:px-12 py-24">
+            <section id="all-projects" x-data="{ projects: [] }" x-init="fetch('projects.json').then(response => response.json()).then(data => projects = data)">
+                <h1 class="text-4xl md:text-5xl font-bold main-heading mb-4">All Projects</h1>
+                <p class="text-lg mb-12">Here's a comprehensive list of my work. Click on any project to see the details.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <template x-for="(project, index) in projects" :key="index">
+                        <div @click="projectModalOpen = true; selectedProject = project"
+                             class="glass-effect rounded-lg p-6 flex flex-col group hover:-translate-y-2 transition-transform duration-300 cursor-pointer"
+                             data-aos="fade-up" :data-aos-delay="50 * (index % 3)">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <template x-for="icon in project.icons" :key="icon">
+                                        <i :class="icon" class="text-4xl text-accent mr-2"></i>
+                                    </template>
+                                </div>
+                                <div class="flex space-x-3">
+                                    <a :href="project.githubLink" target="_blank" rel="noopener noreferrer" @click.stop class="hover:text-accent"><i class="devicon-github-original text-2xl"></i></a>
+                                </div>
+                            </div>
+                            <h3 class="text-xl font-bold main-heading group-hover:text-accent transition-colors" x-text="project.title"></h3>
+                            <p class="mt-2 flex-grow" x-text="project.problem.substring(0, 150) + '...'"></p>
+                            <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm mt-4">
+                                <template x-for="tech in project.tech.slice(0, 4)" :key="tech">
+                                     <span x-text="tech" class="bg-slate-700 text-accent text-xs font-semibold mr-2 px-2.5 py-0.5 rounded"></span>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </section>
+        </main>
+
+        <footer class="py-6 text-center text-slate-500 text-sm">
+            <p>Designed & Built by Shrisab Shrestha</p>
+        </footer>
+    </div>
+    
+    <div x-show="projectModalOpen" @keydown.escape.window="projectModalOpen = false" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" style="display: none;">
+        <div @click.away="projectModalOpen = false" class="glass-effect rounded-lg shadow-xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col" x-show="projectModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
+            <div class="p-6 border-b border-slate-700 flex justify-between items-center">
+                <h3 class="text-2xl font-bold main-heading" x-text="selectedProject.title"></h3>
+                <button @click="projectModalOpen = false" class="text-slate-500 hover:text-accent text-3xl">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto">
+                <h4 class="text-lg font-bold text-accent mb-2">The Goal</h4>
+                <p class="mb-6" x-html="selectedProject.problem"></p>
+                
+                <h4 class="text-lg font-bold text-accent mb-2">My Solution</h4>
+                <div class="mb-6" x-html="selectedProject.solution"></div>
+
+                <template x-if="selectedProject.visuals && selectedProject.visuals.length > 0">
+                    <div>
+                        <h4 class="text-lg font-bold text-accent mb-2">Visuals</h4>
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <template x-for="visual in selectedProject.visuals">
+                                <img :src="visual.src" :alt="visual.alt" 
+                                    @click="lightboxOpen = true; lightboxImage = visual.src"
+                                    class="rounded-lg cursor-pointer hover:opacity-80 transition-opacity">
+                            </template>
+                        </div>
+                    </div>
+                </template>
+                
+                <h4 class="text-lg font-bold text-accent mb-2">Key Outcomes</h4>
+                <div class="mb-6" x-html="selectedProject.outcome"></div>
+
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <span class="text-sub-heading mr-2">Technologies Used:</span>
+                    <template x-for="tech in selectedProject.tech" :key="tech">
+                        <span class="bg-slate-700 text-accent text-xs font-semibold mr-2 px-2.5 py-0.5 rounded" x-text="tech"></span>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+    <div x-show="lightboxOpen"
+        @keydown.escape.window="lightboxOpen = false"
+        @click="lightboxOpen = false"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-4"
+        x-transition
+        style="display: none;">
+
+        <div @click.stop class="relative">
+            <img :src="lightboxImage" class="max-w-full max-h-[90vh] rounded-lg">
+            <button @click="lightboxOpen = false" class="absolute -top-4 -right-4 text-white text-4xl bg-gray-800/50 rounded-full w-10 h-10 flex items-center justify-center">&times;</button>
+        </div>
+    </div>
+</body>
+</html>

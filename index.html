@@ -22,6 +22,8 @@
                 siteBuilt: false, 
                 activeSection: 'hero',
                 selectedProject: {},
+                lightboxOpen: false,
+                lightboxImage: '',
                 github: { stats: null, totalStars: 0, loading: true, error: null, username: 'Shrisab' },
                 cli: { history: [], command: '' },
                 pipeline: {
@@ -34,6 +36,14 @@
                     currentStage: -1,
                 },
                 init() {
+                    // ---- START OF FIX ----
+                    // If the URL has a hash (e.g., #about), it means the user is navigating
+                    // to a specific section. We should bypass the loader and show the content.
+                    if (window.location.hash) {
+                        this.siteBuilt = true;
+                    }
+                    // ---- END OF FIX ----
+
                     this.$watch('theme', val => { localStorage.setItem('theme', val); document.documentElement.className = val; });
                     document.documentElement.className = this.theme;
                     this.fetchGithubStats();
@@ -499,150 +509,38 @@
                 <a href="https://github.com/Shrisab" target="_blank" rel="noopener noreferrer" class="btn-primary py-2 px-4 rounded-md mt-6 sm:hidden text-center">View on GitHub</a>
             </section>
 
-            <section id="projects" class="py-24 scroll-target" data-aos="fade-up">
+            <section id="projects" class="py-24 scroll-target" data-aos="fade-up" x-data="{ projects: [] }" x-init="fetch('projects.json').then(response => response.json()).then(data => projects = data)">
                 <h2 class="section-heading">My Recent Works</h2>
                 <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
 
-                    <div @click="projectModalOpen = true; selectedProject = {
-                            title: 'AWS-iac-platform-automation',
-                            problem: 'The primary goal of this project is to create a full-stack, API-driven framework for complete, end-to-end automation of cloud infrastructure on Amazon Web Services (AWS). The framework is designed to deploy and manage complex, multi-server environments with a single API call, handling every stage of the cloud deployment lifecycle.',
-                            solution: `The project provides a solution that uses a combination of Terraform for infrastructure provisioning and Ansible for configuration management, all orchestrated through a set of Flask APIs. The system is designed for a seamless, automated workflow triggered by a single request:
-                                        <ol style='margin-top: 10px; padding-left: 20px;'>
-                                            <li>1. A user sends a POST request to the Deployment API (trigger_deploy.py) with parameters defining the desired environment.</li>
-                                            <li>2. The API triggers the main deploy.sh script.</li>
-                                            <li>3. Terraform takes over, initializing the correct workspace and applying the infrastructure plan to provision all necessary AWS resources.</li>
-                                            <li>4. Once the infrastructure is up, a Python script (generate_inventory.py) runs to inspect the new resources and create a dynamic merged_inventory.json file for Ansible.</li>
-                                            <li>5. Ansible then executes its main playbook (main.yml) against the newly created inventory, performing all configuration tasks on the target instances.</li>
-                                            <li>6. The result is a fully configured, ready-to-use environment, which can then be managed and monitored using the other provided APIs.</li>
-                                        </ol>`,
-                            outcome: `The key outcomes of this project are:
-                                      <ul style='margin-top: 10px; padding-left: 20px;'>
-                                          <li><strong>Infrastructure as Code (IaC):</strong> All AWS resources are defined programmatically using Terraform.</li>
-                                          <li><strong>API-Driven Operations:</strong> A set of Flask APIs serves as the primary control plane for all operations, from deployment to monitoring.</li>
-                                          <li><strong>Multi-Environment Management:</strong> The use of Terraform Workspaces enables the creation and management of isolated environments from the same codebase.</li>
-                                          <li><strong>Dynamic Inventory Generation:</strong> An Ansible inventory is automatically generated based on the resources provisioned by Terraform.</li>
-                                          <li><strong>Comprehensive Configuration Management:</strong> Ansible is used for a wide range of configuration tasks, including installing software, managing storage, and securely transferring files.</li>
-                                      </ul>`,
-                            tech: ['Terraform', 'Ansible', 'Python', 'AWS', 'Flask', 'Bash', 'Boto3', 'Paramiko']
-                        }"
-                        class="glass-effect rounded-lg p-6 flex flex-col group hover:-translate-y-2 transition-transform duration-300 cursor-pointer" data-aos="fade-up" data-aos-delay="50">
-                        <div class="flex justify-between items-center mb-4">
-                            <div>
-                                <i class="devicon-ansible-plain text-4xl text-accent mr-2"></i>
-                                <i class="devicon-terraform-plain text-4xl text-accent mr-2"></i>
-                                <i class="devicon-python-plain text-4xl text-accent mr-2"></i>
-                                <i class="devicon-amazonwebservices-original text-4xl text-accent"></i>
+                    <template x-for="(project, index) in projects.slice(0, 4)" :key="index">
+                        <div @click="projectModalOpen = true; selectedProject = project"
+                            class="glass-effect rounded-lg p-6 flex flex-col group hover:-translate-y-2 transition-transform duration-300 cursor-pointer"
+                            data-aos="fade-up" :data-aos-delay="50 * (index + 1)">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <template x-for="icon in project.icons" :key="icon">
+                                        <i :class="icon" class="text-4xl text-accent mr-2"></i>
+                                    </template>
+                                </div>
+                                <div class="flex space-x-3">
+                                    <a :href="project.githubLink" target="_blank" rel="noopener noreferrer" @click.stop class="hover:text-accent"><i class="devicon-github-original text-2xl"></i></a>
+                                </div>
                             </div>
-                            <div class="flex space-x-3">
-                                <a href="https://github.com/Shrisab/aws-iac-platform-automation" target="_blank" rel="noopener noreferrer" @click.stop class="hover:text-accent"><i class="devicon-github-original text-2xl"></i></a>
+                            <h3 class="text-xl font-bold main-heading group-hover:text-accent transition-colors" x-text="project.title"></h3>
+                            <p class="mt-2 flex-grow" x-text="project.problem.substring(0, 150) + '...'"></p> <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm mt-4">
+                                <template x-for="tech in project.tech.slice(0, 4)" :key="tech">
+                                    <span x-text="tech"></span>
+                                </template>
                             </div>
                         </div>
-                        <h3 class="text-xl font-bold main-heading group-hover:text-accent transition-colors">AWS-iac-platform-automation</h3>
-                        <p class="mt-2 flex-grow">An API-driven framework using Terraform and Ansible for complete, automated provisioning and configuration of custom environments on AWS.</p>
-                        <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm mt-4">
-                            <span>Ansible</span><span>Terraform</span><span>Python</span><span>AWS</span>
-                        </div>
-                    </div>
+                    </template>
 
-                    <div @click="projectModalOpen = true; selectedProject = {
-                            title: 'Automated SSL Certificate Management',
-                            problem: 'The primary goal of this project is to automate the renewal and management of SSL/TLS certificates using Let\'s Encrypt and Terraform. This automation simplifies the process of keeping a website\'s SSL certificates up-to-date and secure.',
-                            solution: `The project provides a set of scripts that work together to achieve the goal of automated SSL certificate management. The key components of the solution are:
-                                        <ol style='margin-top: 10px; padding-left: 20px;'>
-                                            <li><strong>Proactive Certificate Expiration Checks:</strong> A script named check-certificate-expiry.sh is used to check if an SSL certificate is already expired or if it will expire within the next 10 days.</li>
-                                            <li><strong>Automated Certificate Renewal:</strong> The new-renew.sh script automates the process of renewing SSL/TLS certificates with Let's Encrypt using DNS challenges.</li>
-                                            <li><strong>Terraform Integration for Infrastructure Management:</strong> The main script, start.sh, integrates with Terraform to automatically provision and de-provision the necessary infrastructure for certificate renewal.</li>
-                                            <li><strong>Scheduled Renewals with Cron:</strong> The new-renew.sh script adds a cron job to automatically run the renewal script every Sunday at midnight, ensuring regular checks without manual intervention.</li>
-                                        </ol>`,
-                            outcome: `The key outcomes of using this solution are:
-                                      <ul style='margin-top: 10px; padding-left: 20px;'>
-                                          <li><strong>Fully Automated SSL/TLS Certificate Renewal:</strong> The entire process of checking for certificate expiration, renewing the certificate, and managing the necessary infrastructure is automated.</li>
-                                          <li><strong>Enhanced Security:</strong> By ensuring that SSL/TLS certificates are always up-to-date, the solution helps in maintaining the security of the website.</li>
-                                          <li><strong>Proactive Management:</strong> The system proactively checks for certificate expiration, preventing any downtime or security warnings due to expired certificates.</li>
-                                          <li><strong>Simplified Certificate Management:</strong> The solution simplifies what can be a complex and manual process of managing SSL/TLS certificates.</li>
-                                      </ul>`,
-                            tech: ['Let\'s Encrypt', 'Terraform', 'Bash', 'Cron']
-                        }"
-                        class="glass-effect rounded-lg p-6 flex flex-col group hover:-translate-y-2 transition-transform duration-300 cursor-pointer" data-aos="fade-up" data-aos-delay="100">
-                        <div class="flex justify-between items-center mb-4">
-                            <div>
-                                <i class="devicon-bash-plain text-4xl text-accent mr-2"></i>
-                                <i class="devicon-terraform-plain text-4xl text-accent"></i>
-                            </div>
-                            <div class="flex space-x-3">
-                                <a href="https://github.com/Shrisab/Cert-Automate-SSL-TLS-Certificate-Management" target="_blank" rel="noopener noreferrer" @click.stop class="hover:text-accent"><i class="devicon-github-original text-2xl"></i></a>
-                            </div>
-                        </div>
-                        <h3 class="text-xl font-bold main-heading group-hover:text-accent transition-colors">Cert-Automate-SSL-TLS-Certificate-Management</h3>
-                        <p class="mt-2 flex-grow">A set of shell scripts to automate the renewal and management of SSL/TLS certificates using Let's Encrypt and Terraform.</p>
-                        <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm mt-4">
-                            <span>Terraform</span><span>Bash</span>
-                        </div>
-                    </div>
-
-                    <div @click="projectModalOpen = true; selectedProject = {
-                            title: 'Ansible Playbook for AWS Server Provisioning',
-                            problem: 'The primary goal of using an Ansible playbook for AWS server provisioning is to automate the process of setting up and managing servers and other resources in the Amazon Web Services (AWS) cloud. This is a key practice in the world of Infrastructure as Code (IaC), where you manage your infrastructure using code or definition files rather than manual configuration. The aim is to make the process more efficient, repeatable, and less prone to human error.',
-                            solution: `An Ansible playbook for AWS provisioning typically includes a series of tasks that define the desired state of your AWS infrastructure. Here's how it generally works:
-                                        <ol style='margin-top: 10px; padding-left: 20px;'>
-                                            <li><strong>Playbook Structure:</strong> The solution is centered around one or more YAML files called 'playbooks.' These playbooks list a series of 'plays,' each containing 'tasks.'</li>
-                                            <li><strong>Authentication:</strong> The playbook needs to authenticate with your AWS account. This can be done by providing your AWS access and secret keys as environment variables, in a separate variables file, or by using AWS profiles.</li>
-                                            <li><strong>Provisioning Resources:</strong> The playbook uses Ansible's AWS modules to create and manage various AWS resources like EC2 instances, VPCs, and Security Groups.</li>
-                                            <li><strong>Dynamic Inventory:</strong> After provisioning new EC2 instances, you can use a dynamic inventory script to automatically add these new instances to Ansible's inventory for further configuration.</li>
-                                            <li><strong>Configuration:</strong> Once the infrastructure is provisioned, another play can target the new instances to install software, configure services, and deploy applications.</li>
-                                            <li><strong>Lifecycle Management:</strong> IaC with Ansible also includes the ability to destroy the infrastructure you've created.</li>
-                                        </ol>`,
-                            outcome: `By using an Ansible playbook for AWS server provisioning, you can achieve several key outcomes:
-                                      <ul style='margin-top: 10px; padding-left: 20px;'>
-                                          <li><strong>Automation:</strong> The entire process of setting up your infrastructure is automated, saving time and reducing the risk of manual errors.</li>
-                                          <li><strong>Consistency:</strong> Your infrastructure will be provisioned in a consistent and repeatable manner every time the playbook is run.</li>
-                                          <li><strong>Scalability:</strong> You can easily scale your infrastructure up or down by changing a few variables in your playbook.</li>
-                                          <li><strong>Version Control:</strong> Since your infrastructure is defined in code, you can use version control systems like Git to track changes, collaborate, and roll back if needed.</li>
-                                          <li><strong>Agility:</strong> Automation allows you to quickly provision new environments for development, testing, or production.</li>
-                                      </ul>`,
-                            tech: ['Ansible', 'YAML', 'AWS', 'Python', 'Boto3', 'AWS CLI', 'Git', 'Jinja2']
-                        }"
-                        class="glass-effect rounded-lg p-6 flex flex-col group hover:-translate-y-2 transition-transform duration-300 cursor-pointer" data-aos="fade-up" data-aos-delay="150">
-                        <div class="flex justify-between items-center mb-4">
-                            <div>
-                                <i class="devicon-ansible-plain text-4xl text-accent mr-2"></i>
-                                <i class="devicon-amazonwebservices-original text-4xl text-accent"></i>
-                            </div>
-                            <div class="flex space-x-3">
-                                <a href="https://github.com/Shrisab/Ansible" target="_blank" rel="noopener noreferrer" @click.stop class="hover:text-accent"><i class="devicon-github-original text-2xl"></i></a>
-                            </div>
-                        </div>
-                        <h3 class="text-xl font-bold main-heading group-hover:text-accent transition-colors">Ansible Playbook for AWS Server Provisioning</h3>
-                        <p class="mt-2 flex-grow">An Ansible playbook to fully automate EC2 server setup, including package management, database installation, and Node.js configuration.</p>
-                        <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm mt-4">
-                            <span>Ansible</span><span>AWS</span>
-                        </div>
-                    </div>
-
-                    <div @click="projectModalOpen = true; selectedProject = {
-                            title: 'Terraform Project for AWS Network Infrastructure',
-                            imageUrl: 'https://placehold.co/800x450/0a192f/64ffda?text=Project+Screenshot',
-                            problem: 'Manually creating AWS networking infrastructure is complex and lacks version control, making it difficult to replicate or manage changes.',
-                            solution: 'I built a modular Terraform project to define the entire network stack (VPC, subnets, IGW, route tables) and deploy an EC2 instance as code.',
-                            outcome: 'Enabled version-controlled, repeatable, and easily manageable AWS infrastructure. New environments can now be created or destroyed in minutes.',
-                            tech: ['Terraform', 'AWS', 'HCL']
-                        }"
-                        class="glass-effect rounded-lg p-6 flex flex-col group hover:-translate-y-2 transition-transform duration-300 cursor-pointer" data-aos="fade-up" data-aos-delay="200">
-                        <div class="flex justify-between items-center mb-4">
-                            <div>
-                                <i class="devicon-terraform-plain text-4xl text-accent mr-2"></i>
-                                <i class="devicon-amazonwebservices-original text-4xl text-accent"></i>
-                            </div>
-                            <div class="flex space-x-3">
-                                <a href="https://github.com/Shrisab/Terraform" target="_blank" rel="noopener noreferrer" @click.stop class="hover:text-accent"><i class="devicon-github-original text-2xl"></i></a>
-                            </div>
-                        </div>
-                        <h3 class="text-xl font-bold main-heading group-hover:text-accent transition-colors">Terraform Project for AWS Network Infrastructure</h3>
-                        <p class="mt-2 flex-grow">A comprehensive Terraform project for creating a VPC, subnets, security groups, and deploying an EC2 instance, all managed as code.</p>
-                        <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm mt-4">
-                            <span>Terraform</span><span>AWS</span>
-                        </div>
-                    </div>
+                </div>
+                <div class="text-center mt-12">
+                    <a href="projects.html" class="btn-primary py-3 px-8 rounded-md text-lg">
+                        View All Projects
+                    </a>
                 </div>
             </section>
 
@@ -697,20 +595,31 @@
     <div x-show="projectModalOpen" @keydown.escape.window="projectModalOpen = false" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" style="display: none;">
         <div @click.away="projectModalOpen = false" class="glass-effect rounded-lg shadow-xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col" x-show="projectModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
             <div class="p-6 border-b border-slate-700 flex justify-between items-center">
-                 <h3 class="text-2xl font-bold main-heading" x-text="selectedProject.title"></h3>
-                 <button @click="projectModalOpen = false" class="text-slate-500 hover:text-accent text-3xl">&times;</button>
+                <h3 class="text-2xl font-bold main-heading" x-text="selectedProject.title"></h3>
+                <button @click="projectModalOpen = false" class="text-slate-500 hover:text-accent text-3xl">&times;</button>
             </div>
             <div class="p-6 overflow-y-auto">
-                <img :src="selectedProject.imageUrl" alt="" class="rounded-lg mb-6 w-full object-cover">
-                
                 <h4 class="text-lg font-bold text-accent mb-2">The Goal</h4>
                 <p class="mb-6" x-html="selectedProject.problem"></p>
                 
                 <h4 class="text-lg font-bold text-accent mb-2">My Solution</h4>
-                <p class="mb-6" x-html="selectedProject.solution"></p>
+                <div class="mb-6" x-html="selectedProject.solution"></div>
+
+                <template x-if="selectedProject.visuals && selectedProject.visuals.length > 0">
+                    <div>
+                        <h4 class="text-lg font-bold text-accent mb-2">Visuals</h4>
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <template x-for="visual in selectedProject.visuals">
+                                <img :src="visual.src" :alt="visual.alt" 
+                                    @click="lightboxOpen = true; lightboxImage = visual.src"
+                                    class="rounded-lg cursor-pointer hover:opacity-80 transition-opacity">
+                            </template>
+                        </div>
+                    </div>
+                </template>
                 
                 <h4 class="text-lg font-bold text-accent mb-2">Key Outcomes</h4>
-                <p class="mb-6" x-html="selectedProject.outcome"></p>
+                <div class="mb-6" x-html="selectedProject.outcome"></div>
 
                 <div class="mt-4 flex flex-wrap gap-2">
                     <span class="text-sub-heading mr-2">Technologies Used:</span>
@@ -745,6 +654,17 @@
     
     <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
     <script src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
-    
+    <div x-show="lightboxOpen"
+        @keydown.escape.window="lightboxOpen = false"
+        @click="lightboxOpen = false"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-4"
+        x-transition
+        style="display: none;">
+
+        <div @click.stop class="relative">
+            <img :src="lightboxImage" class="max-w-full max-h-[90vh] rounded-lg">
+            <button @click="lightboxOpen = false" class="absolute -top-4 -right-4 text-white text-4xl bg-gray-800/50 rounded-full w-10 h-10 flex items-center justify-center">&times;</button>
+        </div>
+    </div>    
 </body>
 </html>
